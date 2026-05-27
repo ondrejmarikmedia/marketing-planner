@@ -46,10 +46,15 @@ h1,h2,h3,h4{letter-spacing:-.015em;}
 .tl-table thead th{position:sticky;top:0;z-index:3;}
 .tl-table thead th.th-label{z-index:6;}
 .tl-table th.th-month{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fm-grey-90);padding:.35rem .5rem;text-align:center;border-right:2px solid var(--fm-line);border-bottom:1px solid var(--fm-line);background:var(--fm-grey-10);white-space:nowrap;vertical-align:middle;}
-.tl-table th.th-day{font-size:.55rem;font-weight:500;color:var(--fm-mute);padding:.18rem 0;text-align:center;border-right:1px solid var(--fm-grey-10);border-bottom:2px solid var(--fm-line);background:#fff;vertical-align:middle;white-space:nowrap;}
+.tl-table th.th-day{font-size:.55rem;font-weight:500;color:var(--fm-mute);padding:.18rem 0 0;text-align:center;border-right:1px solid var(--fm-grey-10);border-bottom:2px solid var(--fm-line);background:#fff;vertical-align:middle;white-space:nowrap;position:relative;height:28px;}
 .tl-table th.th-day.wknd{background:var(--fm-grey-10);}
 .tl-table th.th-day.mon-bdy{border-right:2px solid var(--fm-line);}
 .tl-table th.th-day.cur-day{background:var(--fm-red-bg);color:var(--fm-red);font-weight:700;border-bottom:2px solid var(--fm-red);}
+.tl-table th.th-day .ev-marker{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;display:block;}
+.tl-table th.th-day .ev-marker.t-holiday{background:#DC2626;}
+.tl-table th.th-day .ev-marker.t-event{background:#f59e0b;}
+.tl-table th.th-day .ev-marker.t-deadline{background:#7c3aed;}
+.tl-table td.wc.ev-day{box-shadow:inset 0 -2px 0 0 rgba(220,38,38,.18);}
 .tl-table td.td-label{position:sticky;left:0;background:#fff;z-index:2;padding:.35rem .7rem;font-size:.82rem;font-weight:600;color:var(--fm-grey-90);border-right:2px solid var(--fm-line);border-bottom:1px solid var(--fm-grey-10);white-space:nowrap;min-width:200px;width:200px;}
 .tl-table td.td-label.lane-label{padding-left:1.6rem;font-size:.74rem;font-weight:500;color:var(--fm-mute);background:#fafafa;}
 .tl-table tr:hover .td-label{background:var(--fm-grey-10);}
@@ -198,7 +203,10 @@ table.data-table tbody tr:hover{background:var(--fm-grey-10);}
     <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:#6b7280;vertical-align:middle;"></span>Plánováno</span>
     <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:var(--fm-red);vertical-align:middle;"></span>Deadline</span>
     <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:#22c55e;vertical-align:middle;"></span>Dokončeno</span>
-    <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:#3b82f6;vertical-align:middle;"></span>Email/Newsletter</span>
+    <span class="ml-3 pl-3" style="border-left:1px solid var(--fm-line);">Tečky pod datem:</span>
+    <span><span class="inline-block rounded-full mr-1" style="width:6px;height:6px;background:#DC2626;vertical-align:middle;"></span>Svátek</span>
+    <span><span class="inline-block rounded-full mr-1" style="width:6px;height:6px;background:#f59e0b;vertical-align:middle;"></span>Událost</span>
+    <span><span class="inline-block rounded-full mr-1" style="width:6px;height:6px;background:#7c3aed;vertical-align:middle;"></span>Deadline</span>
     <span class="ml-4"><em>Kliknutím na buňku upravíte kampaň · tažením přidáte novou</em></span>
   </div>
 </div>
@@ -216,10 +224,15 @@ table.data-table tbody tr:hover{background:var(--fm-grey-10);}
     </div>
     <div class="card p-4">
       <h3 class="text-sm font-semibold mb-3">Kalkulačka budgetů</h3>
-      <div class="form-group mb-3">
+      <label class="flex items-center gap-2 mb-2 text-xs cursor-pointer" style="color:var(--fm-grey-90);">
+        <input type="checkbox" id="budgetCalcUseAuto" checked onchange="renderBudgetCalc()" style="width:auto;">
+        Použít náklady z B2metrics (posledních 12 měs.)
+      </label>
+      <div class="form-group mb-1">
         <label class="fl">Roční budget (Kč)</label>
         <input type="number" id="budgetCalcAnnual" value="300000" oninput="renderBudgetCalc()" style="width:100%;">
       </div>
+      <div id="budgetCalcSource" class="text-xs mb-3" style="color:var(--fm-mute);"></div>
       <div id="budgetCalcResult" class="flex flex-col gap-1"></div>
     </div>
   </div>
@@ -231,7 +244,10 @@ table.data-table tbody tr:hover{background:var(--fm-grey-10);}
     <div class="text-xs mb-3" style="color:var(--fm-mute);">Upravte indexy podle historických dat vašeho klienta. Změny se uloží automaticky.</div>
     <div id="seasonalEditor" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"></div>
     <div class="mt-4 pt-4 border-t" style="border-color:var(--fm-line);">
-      <h4 class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--fm-mute);">České svátky &amp; události</h4>
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="text-xs font-semibold uppercase tracking-wider" style="color:var(--fm-mute);">Svátky &amp; události</h4>
+        <span class="text-xs" style="color:var(--fm-mute);">Editovatelné v <em>Nastavení</em></span>
+      </div>
       <div class="flex flex-wrap gap-2 text-xs" id="czechHolidays"></div>
     </div>
   </div>
@@ -307,6 +323,14 @@ table.data-table tbody tr:hover{background:var(--fm-grey-10);}
         <button class="btn btn-ghost btn-sm" onclick="addStatusRow()">+ Přidat status</button>
       </div>
       <div id="statusesEditor" class="flex flex-col gap-2"></div>
+    </div>
+    <div class="card p-4" style="grid-column:1/-1;">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold">Svátky &amp; události</h3>
+        <button class="btn btn-ghost btn-sm" onclick="addEventRow()">+ Přidat událost</button>
+      </div>
+      <div class="text-xs mb-3" style="color:var(--fm-mute);">Události se zobrazí jako malé tečky pod denním číslem v kalendáři. Datum <code>MM-DD</code> = opakuje se každý rok (svátky), <code>YYYY-MM-DD</code> = jednorázová událost.</div>
+      <div id="eventsEditor" class="grid md:grid-cols-2 gap-2"></div>
     </div>
     <div class="card p-4" style="grid-column:1/-1;">
       <h3 class="text-sm font-semibold mb-3">Export &amp; Import dat</h3>
@@ -428,7 +452,7 @@ const DEFAULT_SEASONAL = [
   {month:12,label:'Prosinec',abbr:'Pro',index:0.75,notes:'Vánoce, minimum výstavby'},
 ];
 
-const FMP_VERSION = '5'; // bump to force-reset localStorage when data model changes
+const FMP_VERSION = '6'; // bump to force-reset localStorage when data model changes
 
 const DEFAULT_PLATFORMS = {
   'Google Ads':{monthly:11000,color:'#4285F4',lanes:[]},
@@ -471,14 +495,30 @@ function refreshTaxonomyCache(){
   getStatuses().forEach(s=>{STATUS_LABELS[s.key]=s.label;STATUS_COLORS[s.key]=s.color;});
   getTypes().forEach(t=>{TYPE_LABELS[t.key]=t.label;});
 }
-const CZECH_HOLIDAYS = [
-  {date:'01-01',name:'Nový rok'},{date:'04-18',name:'Velký pátek 2025'},
-  {date:'05-01',name:'Svátek práce'},{date:'05-08',name:'Den vítězství'},
-  {date:'07-05',name:'Cyril a Metoděj'},{date:'07-06',name:'Jan Hus'},
-  {date:'09-28',name:'Den české státnosti'},{date:'10-28',name:'Vznik ČSR'},
-  {date:'11-02',name:'Dušičky'},{date:'11-17',name:'Den svobody'},
-  {date:'12-06',name:'Mikuláš'},{date:'12-24',name:'Štědrý den'},
-  {date:'12-25',name:'1. svátek vánoční'},{date:'12-26',name:'2. svátek vánoční'},
+// Default events — seed pro nové klienty. Po vytvoření klienta jsou editovatelné v Nastavení.
+// date formats:
+//   "MM-DD"        → opakuje se každý rok (svátky)
+//   "YYYY-MM-DD"   → jednorázová událost (deadline, akce)
+// type: 'holiday' | 'event' | 'deadline'
+const DEFAULT_EVENTS = [
+  {date:'01-01',name:'Nový rok',type:'holiday'},
+  {date:'02-14',name:'Valentýn',type:'event'},
+  {date:'05-01',name:'Svátek práce',type:'holiday'},
+  {date:'05-08',name:'Den vítězství',type:'holiday'},
+  {date:'05-10',name:'Den matek (2. ne v květnu)',type:'event'},
+  {date:'07-05',name:'Cyril a Metoděj',type:'holiday'},
+  {date:'07-06',name:'Jan Hus',type:'holiday'},
+  {date:'09-01',name:'Začátek školy',type:'event'},
+  {date:'09-28',name:'Den české státnosti',type:'holiday'},
+  {date:'10-28',name:'Vznik ČSR',type:'holiday'},
+  {date:'11-02',name:'Dušičky',type:'holiday'},
+  {date:'11-17',name:'Den svobody',type:'holiday'},
+  {date:'11-27',name:'Black Friday (4. pá v listopadu)',type:'event'},
+  {date:'11-30',name:'Cyber Monday',type:'event'},
+  {date:'12-06',name:'Mikuláš',type:'holiday'},
+  {date:'12-24',name:'Štědrý den',type:'holiday'},
+  {date:'12-25',name:'1. svátek vánoční',type:'holiday'},
+  {date:'12-26',name:'2. svátek vánoční',type:'holiday'},
 ];
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
@@ -505,7 +545,8 @@ function makeDefaultState(name) {
     },
     campaigns:[],
     seasonalData:JSON.parse(JSON.stringify(DEFAULT_SEASONAL)),
-    shoptetData:{monthlyRevenue:[],lastSync:null}, // [{year,month,revenue,orders}]
+    shoptetData:{monthlyRevenue:[],lastSync:null}, // [{year,month,revenue,orders,cost}]
+    events:JSON.parse(JSON.stringify(DEFAULT_EVENTS)), // [{date,name,type}]
   };
 }
 
@@ -576,15 +617,17 @@ function makeHardsmileState(){
     {id:cid(),name:'Heureka — produktový listing',platform:'Heureka',lane:'',type:'performance',status:'running',startDate:'2026-01-01',endDate:'2026-12-31',budgetTotal:42000,color:'#FF6900',notes:'Celoroční produktový listing',showInCalendar:true,spend:21800,conversions:372,clicks:10400,impressions:248000},
   ];
   // Demo Shoptet revenue data — 3 years (2023, 2024, 2025) with beauty/health-like seasonality
-  // (real data nahradí přes data.json sync ze Shoptetu)
+  // (real data nahradí přes data.json sync z B2metrics)
   const beautyPattern=[0.85,0.92,1.05,1.02,1.25,0.95,0.80,0.85,1.10,1.20,1.50,1.40]; // Jan..Dec relative weight
   s.shoptetData={
     monthlyRevenue:(()=>{
       const out=[];
-      [{y:2023,base:180000},{y:2024,base:215000},{y:2025,base:248000}].forEach(({y,base})=>{
+      [{y:2023,base:180000,costMult:0.35},{y:2024,base:215000,costMult:0.32},{y:2025,base:248000,costMult:0.30}].forEach(({y,base,costMult})=>{
         beautyPattern.forEach((mult,i)=>{
-          const noise=0.93+Math.random()*0.14; // ±7% randomization
-          out.push({year:y,month:i+1,revenue:Math.round(base*mult*noise),orders:Math.round(base*mult*noise/650)});
+          const noise=0.93+Math.random()*0.14;
+          const revenue=Math.round(base*mult*noise);
+          const cost=Math.round(revenue*costMult*(0.85+Math.random()*0.3));
+          out.push({year:y,month:i+1,revenue,orders:Math.round(revenue/650),cost});
         });
       });
       return out;
@@ -611,6 +654,8 @@ function loadStateForClient(id){try{const r=localStorage.getItem('fmp_data_'+id)
   // Ensure shoptetData exists
   if(!s.shoptetData)s.shoptetData={monthlyRevenue:[],lastSync:null};
   if(!Array.isArray(s.shoptetData.monthlyRevenue))s.shoptetData.monthlyRevenue=[];
+  // Events (editable holiday/event list)
+  if(!Array.isArray(s.events))s.events=JSON.parse(JSON.stringify(DEFAULT_EVENTS));
   // Ensure campaigns have lane (default empty string)
   if(Array.isArray(s.campaigns))s.campaigns.forEach(c=>{if(typeof c.lane==='undefined')c.lane='';});
   return s;
@@ -742,7 +787,13 @@ function populateCalFilter(){
   sel.value=cur;
 }
 
-function ymdISO(d){return d.toISOString().split('T')[0];}
+// Local-date ISO string (NOT toISOString which is UTC and shifts the date in CZ timezone)
+function ymdISO(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const dd=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
 function ymdParse(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
 
 function renderCalendar(){
@@ -839,14 +890,28 @@ function renderCalendar(){
   h+=`</tr>`;
 
   // Row 2: Day number headers
+  // Build event lookup for this year (and visible months only)
+  const evLookup=buildEventLookup(year);
+
   h+=`<tr><th class="th-label" style="font-size:.58rem;">Den →</th>`;
   days.forEach((d,i)=>{
     const isCur=d.iso===todayISO;
     const isWk=d.dow===0||d.dow===6;
     const monBdy=(i<days.length-1)&&days[i+1].m!==d.m;
+    const evs=evLookup[d.iso];
     const cls=`th-day${isCur?' cur-day':''}${isWk?' wknd':''}${monBdy?' mon-bdy':''}`;
     const dayTxt=totalDays<=92?d.day:(d.day===1||d.day===15?d.day:'');
-    h+=`<th class="${cls}" style="width:${cellW}px;min-width:${cellW}px;" title="${d.date.toLocaleDateString('cs-CZ',{weekday:'short',day:'numeric',month:'numeric'})}">${dayTxt}</th>`;
+    const dateStr=d.date.toLocaleDateString('cs-CZ',{weekday:'short',day:'numeric',month:'numeric'});
+    const evTitle=evs?` — ${evs.map(e=>e.name).join(', ')}`:'';
+    // Pick highest-priority event type for marker color: deadline > event > holiday
+    let evType='';
+    if(evs){
+      if(evs.some(e=>e.type==='deadline'))evType='deadline';
+      else if(evs.some(e=>e.type==='event'))evType='event';
+      else evType='holiday';
+    }
+    const marker=evs?`<span class="ev-marker t-${evType}"></span>`:'';
+    h+=`<th class="${cls}" style="width:${cellW}px;min-width:${cellW}px;" title="${dateStr}${evTitle}">${dayTxt}${marker}</th>`;
   });
   h+=`</tr></thead><tbody>`;
 
@@ -1146,8 +1211,49 @@ function resetSeasonalData(){
   renderSeasonal();
 }
 
+// Sum of last 12 months of cost from B2metrics. Returns {total, monthsCounted, fromIso, toIso} or null.
+function annualCostFromB2m(){
+  const data=(state.shoptetData&&state.shoptetData.monthlyRevenue)||[];
+  if(data.length===0)return null;
+  // Sort descending by year/month, take latest 12 with cost>0
+  const sorted=[...data].sort((a,b)=>b.year!==a.year?b.year-a.year:b.month-a.month);
+  const withCost=sorted.filter(r=>(r.cost||0)>0);
+  if(withCost.length===0)return null;
+  const recent=withCost.slice(0,12);
+  const total=recent.reduce((a,r)=>a+(r.cost||0),0);
+  const last=recent[0],first=recent[recent.length-1];
+  return {
+    total:Math.round(total),
+    monthsCounted:recent.length,
+    fromIso:`${first.year}-${String(first.month).padStart(2,'0')}`,
+    toIso:`${last.year}-${String(last.month).padStart(2,'0')}`,
+  };
+}
+
 function renderBudgetCalc(){
-  const annual=parseFloat(document.getElementById('budgetCalcAnnual').value)||300000;
+  const annualInput=document.getElementById('budgetCalcAnnual');
+  const sourceEl=document.getElementById('budgetCalcSource');
+  const fromB2m=annualCostFromB2m();
+  const useAuto=document.getElementById('budgetCalcUseAuto');
+  const isAuto=useAuto?useAuto.checked:!!fromB2m;
+  let annual;
+  if(isAuto&&fromB2m){
+    annual=fromB2m.total;
+    if(annualInput){annualInput.value=annual;annualInput.disabled=true;}
+    if(sourceEl){
+      sourceEl.style.display='';
+      sourceEl.innerHTML=`<span style="color:#16a34a;">✓ Auto z B2metrics:</span> součet nákladů za posledních ${fromB2m.monthsCounted} měs. (${fromB2m.fromIso} → ${fromB2m.toIso})`;
+    }
+  }else{
+    annual=parseFloat(annualInput.value)||300000;
+    if(annualInput){annualInput.disabled=false;}
+    if(sourceEl){
+      sourceEl.style.display='';
+      sourceEl.innerHTML=fromB2m
+        ?`<span style="color:var(--fm-mute);">Ručně zadáno (B2metrics dostupné: ${fromB2m.total.toLocaleString('cs-CZ')} Kč)</span>`
+        :`<span style="color:var(--fm-mute);">Ručně zadáno (žádná B2metrics data)</span>`;
+    }
+  }
   const sd=state.seasonalData;
   const total=sd.reduce((a,s)=>a+s.index,0);
   const el=document.getElementById('budgetCalcResult');
@@ -1164,7 +1270,17 @@ function renderBudgetCalc(){
 
 function renderHolidays(){
   const el=document.getElementById('czechHolidays');
-  el.innerHTML=CZECH_HOLIDAYS.map(h=>`<span class="chip">${h.date.slice(0,2)}.${h.date.slice(3,5)}. ${h.name}</span>`).join('');
+  if(!el)return;
+  const evts=[...(state.events||[])].sort((a,b)=>{
+    const ad=a.date.length===5?a.date:a.date.slice(5);
+    const bd=b.date.length===5?b.date:b.date.slice(5);
+    return ad.localeCompare(bd);
+  });
+  const TYPE_ICON={holiday:'🇨🇿',event:'★',deadline:'⏰'};
+  el.innerHTML=evts.map(h=>{
+    const dd=h.date.length===5?h.date:h.date.slice(5); // MM-DD part
+    return `<span class="chip" title="${esc(h.name)}">${TYPE_ICON[h.type]||'•'} ${dd.slice(3,5)}.${dd.slice(0,2)}. ${esc(h.name)}</span>`;
+  }).join('');
 }
 
 // ─── CAMPAIGNS TAB ────────────────────────────────────────────────────────────
@@ -1230,6 +1346,7 @@ function renderSettings(){
   renderPlatformConfig();
   renderTypesEditor();
   renderStatusesEditor();
+  renderEventsEditor();
 
   document.getElementById('clientsListSettings').innerHTML=clients.map(c=>`
     <div class="flex items-center gap-2">
@@ -1272,6 +1389,71 @@ function renderTypesEditor(){
       <input type="text" value="${esc(t.label)}" style="flex:1;" onchange="updateTypeLabel(${i},this.value)" placeholder="Zobrazovaný název">
       <button class="btn btn-ghost btn-sm" style="color:var(--fm-red);" onclick="removeType(${i})">×</button>
     </div>`).join('');
+}
+
+function renderEventsEditor(){
+  const el=document.getElementById('eventsEditor');
+  if(!el)return;
+  const events=(state.events||[]).slice().sort((a,b)=>{
+    const ad=a.date.length===5?a.date:a.date.slice(5);
+    const bd=b.date.length===5?b.date:b.date.slice(5);
+    return ad.localeCompare(bd);
+  });
+  el.innerHTML=events.map((ev,i)=>{
+    const realIdx=state.events.indexOf(ev);
+    return `<div class="flex items-center gap-2">
+      <input type="text" value="${esc(ev.date)}" style="width:110px;font-family:'JetBrains Mono',monospace;font-size:.78rem;" onchange="updateEventDate(${realIdx},this.value)" placeholder="MM-DD nebo YYYY-MM-DD" title="MM-DD = opakuje se ročně, YYYY-MM-DD = jednorázové">
+      <select onchange="updateEventType(${realIdx},this.value)" style="width:110px;">
+        <option value="holiday"${ev.type==='holiday'?' selected':''}>🇨🇿 Svátek</option>
+        <option value="event"${ev.type==='event'?' selected':''}>★ Událost</option>
+        <option value="deadline"${ev.type==='deadline'?' selected':''}>⏰ Deadline</option>
+      </select>
+      <input type="text" value="${esc(ev.name)}" style="flex:1;" onchange="updateEventName(${realIdx},this.value)" placeholder="Název události">
+      <button class="btn btn-ghost btn-sm" style="color:var(--fm-red);" onclick="removeEvent(${realIdx})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function addEventRow(){
+  state.events.push({date:'01-01',name:'Nová událost',type:'event'});
+  saveState();renderEventsEditor();
+  if(activeTab==='calendar')renderCalendar();
+}
+function updateEventDate(i,v){
+  v=v.trim();
+  // Accept MM-DD or YYYY-MM-DD
+  if(!/^(\d{4}-)?\d{2}-\d{2}$/.test(v)){alert('Datum musí být ve formátu MM-DD nebo YYYY-MM-DD');renderEventsEditor();return;}
+  state.events[i].date=v;saveState();renderEventsEditor();
+  if(activeTab==='calendar')renderCalendar();
+}
+function updateEventName(i,v){state.events[i].name=v;saveState();
+  if(activeTab==='calendar')renderCalendar();
+}
+function updateEventType(i,v){state.events[i].type=v;saveState();renderEventsEditor();
+  if(activeTab==='calendar')renderCalendar();
+}
+function removeEvent(i){
+  if(!confirm(`Smazat událost "${state.events[i].name}"?`))return;
+  state.events.splice(i,1);saveState();renderEventsEditor();
+  if(activeTab==='seasonal')renderHolidays();
+  if(activeTab==='calendar')renderCalendar();
+}
+
+// Lookup map: ISO date string ("2026-05-10") → array of events for that day
+// Built on demand for current calendar view
+function buildEventLookup(year){
+  const map={};
+  (state.events||[]).forEach(ev=>{
+    let iso;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(ev.date)){
+      iso=ev.date;
+    } else if(/^\d{2}-\d{2}$/.test(ev.date)){
+      iso=`${year}-${ev.date}`;
+    } else return;
+    if(!map[iso])map[iso]=[];
+    map[iso].push(ev);
+  });
+  return map;
 }
 
 function renderStatusesEditor(){
@@ -1546,10 +1728,13 @@ function normalizeB2mResponse(payload){
     // Revenue: numeric or string-numeric ("279010.28")
     const rev=row.revenue??row.turnover??row.obrat??row.amount??row.total??0;
     const ord=row.orders??row.order_count??row.objednavky??row.count??0;
+    const cst=row.cost??row.naklady??row.spend??row.ad_cost??0;
     const revenue=+String(rev).replace(',','.');
     const orders=+String(ord).replace(',','.');
-    if(year>0&&month>=1&&month<=12&&revenue>0){
-      out.push({year,month,revenue:Math.round(revenue),orders:Math.round(orders)});
+    const cost=+String(cst).replace(',','.');
+    // Keep row if EITHER revenue or cost > 0 (some months may have spend but no orders yet)
+    if(year>0&&month>=1&&month<=12&&(revenue>0||cost>0)){
+      out.push({year,month,revenue:Math.round(revenue),orders:Math.round(orders),cost:Math.round(cost)});
     }
   };
   const walkArrays=(node,depth)=>{

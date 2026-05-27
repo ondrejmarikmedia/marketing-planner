@@ -123,8 +123,9 @@ function normalizeB2mResponse_(payload) {
     if (!year || !month) return;
     const revenue = +String(row.revenue ?? row.turnover ?? row.amount ?? 0).replace(',', '.');
     const orders = +String(row.orders ?? row.order_count ?? row.count ?? 0).replace(',', '.');
-    if (revenue > 0 && year > 0 && month >= 1 && month <= 12) {
-      out.push({ year, month, revenue: Math.round(revenue), orders: Math.round(orders) });
+    const cost = +String(row.cost ?? row.naklady ?? row.spend ?? row.ad_cost ?? 0).replace(',', '.');
+    if ((revenue > 0 || cost > 0) && year > 0 && month >= 1 && month <= 12) {
+      out.push({ year, month, revenue: Math.round(revenue), orders: Math.round(orders), cost: Math.round(cost) });
     }
   };
   const walk = (node, depth) => {
