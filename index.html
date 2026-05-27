@@ -1,0 +1,1671 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>FM · Marketingový plánovač</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fm-black:#000000;--fm-white:#ffffff;
+  --fm-red:#DC2626;--fm-red-dark:#b91c1c;--fm-red-bg:#fef2f2;
+  --fm-grey-90:#1A1A1A;--fm-grey-50:#7A7A7A;--fm-grey-10:#F2F2F2;--fm-grey-20:#e5e5e5;
+  --fm-bg:var(--fm-grey-10);--fm-card:var(--fm-white);--fm-text:var(--fm-grey-90);
+  --fm-mute:var(--fm-grey-50);--fm-line:var(--fm-grey-20);
+}
+*{box-sizing:border-box;}
+body{background:var(--fm-bg);color:var(--fm-text);font-family:'Inter',-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-feature-settings:"ss01";letter-spacing:-.005em;}
+.card{background:var(--fm-card);border:1px solid var(--fm-line);border-radius:6px;}
+.pill{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .65rem;border-radius:999px;font-size:.72rem;font-weight:600;letter-spacing:.02em;}
+.num{font-feature-settings:"tnum" 1,"lnum" 1;font-variant-numeric:tabular-nums;}
+.mono{font-family:'JetBrains Mono',ui-monospace,"SFMono-Regular",Menlo,monospace;font-feature-settings:"tnum" 1;}
+.btn{padding:.5rem 1rem;border-radius:4px;font-weight:600;font-size:.85rem;transition:all .12s;cursor:pointer;border:1px solid transparent;letter-spacing:.005em;}
+.btn-primary{background:var(--fm-black);color:#fff;}.btn-primary:hover{background:#222;}
+.btn-accent{background:var(--fm-red);color:#fff;}.btn-accent:hover{background:var(--fm-red-dark);}
+.btn-ghost{background:#fff;border:1px solid var(--fm-line);color:var(--fm-text);}.btn-ghost:hover{background:var(--fm-grey-10);}
+.btn-sm{padding:.3rem .7rem;font-size:.78rem;}
+select,input,textarea{background:#fff;border:1px solid var(--fm-line);color:var(--fm-text);border-radius:4px;padding:.4rem .7rem;font-size:.86rem;font-family:inherit;}
+select:focus,input:focus,textarea:focus{outline:2px solid rgba(220,38,38,.18);border-color:var(--fm-red);}
+.tab{padding:.42rem .85rem;border-radius:4px;font-size:.82rem;color:var(--fm-grey-50);cursor:pointer;border:1px solid transparent;font-weight:500;white-space:nowrap;}
+.tab:hover{color:var(--fm-grey-90);}
+.tab.active{background:var(--fm-black);color:#fff;border-color:var(--fm-black);font-weight:600;}
+.fm-wordmark{font-weight:700;letter-spacing:.04em;color:var(--fm-black);font-size:.92rem;}
+.fm-wordmark .dot{display:inline-block;width:6px;height:6px;background:var(--fm-red);border-radius:50%;margin-left:3px;vertical-align:2px;}
+h1,h2,h3,h4{letter-spacing:-.015em;}
+.kpi-accent{color:var(--fm-red);}
+.platform-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:.5rem;vertical-align:middle;}
+
+/* Timeline — daily grid table */
+.tl-wrap{overflow-x:auto;overflow-y:visible;border:1px solid var(--fm-line);border-radius:6px;background:#fff;user-select:none;max-height:75vh;}
+.tl-table{border-collapse:collapse;table-layout:fixed;}
+.tl-table th.th-label{width:200px;min-width:200px;position:sticky;left:0;background:var(--fm-grey-10);z-index:5;padding:.3rem .7rem;font-size:.65rem;font-weight:600;color:var(--fm-mute);text-transform:uppercase;letter-spacing:.06em;border-right:2px solid var(--fm-line);border-bottom:1px solid var(--fm-line);}
+.tl-table thead th{position:sticky;top:0;z-index:3;}
+.tl-table thead th.th-label{z-index:6;}
+.tl-table th.th-month{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fm-grey-90);padding:.35rem .5rem;text-align:center;border-right:2px solid var(--fm-line);border-bottom:1px solid var(--fm-line);background:var(--fm-grey-10);white-space:nowrap;vertical-align:middle;}
+.tl-table th.th-day{font-size:.55rem;font-weight:500;color:var(--fm-mute);padding:.18rem 0;text-align:center;border-right:1px solid var(--fm-grey-10);border-bottom:2px solid var(--fm-line);background:#fff;vertical-align:middle;white-space:nowrap;}
+.tl-table th.th-day.wknd{background:var(--fm-grey-10);}
+.tl-table th.th-day.mon-bdy{border-right:2px solid var(--fm-line);}
+.tl-table th.th-day.cur-day{background:var(--fm-red-bg);color:var(--fm-red);font-weight:700;border-bottom:2px solid var(--fm-red);}
+.tl-table td.td-label{position:sticky;left:0;background:#fff;z-index:2;padding:.35rem .7rem;font-size:.82rem;font-weight:600;color:var(--fm-grey-90);border-right:2px solid var(--fm-line);border-bottom:1px solid var(--fm-grey-10);white-space:nowrap;min-width:200px;width:200px;}
+.tl-table td.td-label.lane-label{padding-left:1.6rem;font-size:.74rem;font-weight:500;color:var(--fm-mute);background:#fafafa;}
+.tl-table tr:hover .td-label{background:var(--fm-grey-10);}
+.tl-table tr.lane-row td.wc{height:28px;}
+.tl-table td.wc{padding:0;border-right:1px solid var(--fm-grey-10);border-bottom:1px solid var(--fm-grey-10);cursor:crosshair;position:relative;vertical-align:middle;height:36px;}
+.tl-table td.wc.wknd{background:rgba(0,0,0,.025);}
+.tl-table td.wc.mon-bdy{border-right:2px solid var(--fm-line);}
+.tl-table td.wc.cur-day{background:rgba(220,38,38,.06);}
+.tl-table td.wc.wc-empty:hover{background:rgba(220,38,38,.10)!important;cursor:crosshair;}
+.tl-table td.wc.wc-filled{cursor:pointer;border-right-color:transparent;border-left-color:transparent;}
+.tl-table td.wc.wc-filled:hover{filter:brightness(.88);}
+.tl-table td.wc.wc-drag{background:rgba(220,38,38,.22)!important;outline:1px dashed var(--fm-red);}
+.tl-table td.wc.wc-start{border-radius:3px 0 0 3px;border-left:2px solid rgba(0,0,0,.18)!important;}
+.tl-table td.wc.wc-end{border-radius:0 3px 3px 0;border-right:2px solid rgba(0,0,0,.18)!important;}
+.tl-table td.wc.wc-start.wc-end{border-radius:3px;}
+.tl-camp-label{position:absolute;left:5px;top:50%;transform:translateY(-50%);font-size:.65rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.4);max-width:300px;z-index:1;}
+.tl-table tr.season-row td{height:5px;padding:0;border-bottom:2px solid var(--fm-line);border-right:1px solid rgba(0,0,0,.06);}
+.tl-table tr.season-row td.td-label{background:var(--fm-grey-10);font-size:.58rem;font-weight:600;color:var(--fm-mute);letter-spacing:.05em;text-transform:uppercase;border-right:2px solid var(--fm-line);}
+.tl-table tr.platform-row td.td-label{background:#f5f5f5;border-bottom:1px solid var(--fm-line);}
+.tl-add-btn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:3px;background:transparent;border:1px solid transparent;color:var(--fm-mute);font-size:.85rem;font-weight:700;cursor:pointer;margin-left:.35rem;line-height:1;vertical-align:middle;}
+.tl-table tr:hover .tl-add-btn,.tl-add-btn:hover{background:var(--fm-red);color:#fff;border-color:var(--fm-red);}
+.tl-table td.td-label .tl-row-name{display:inline-flex;align-items:center;gap:.4rem;}
+.tl-tooltip{position:fixed;background:var(--fm-black);color:#fff;font-size:.75rem;padding:.5rem .75rem;border-radius:4px;z-index:2000;pointer-events:none;max-width:260px;line-height:1.5;}
+
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:#fff;border-radius:8px;padding:1.75rem;width:540px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.22);}
+.modal-box h3{font-size:1.05rem;font-weight:700;margin:0 0 1.2rem;}
+.form-row{display:grid;gap:.75rem;margin-bottom:.9rem;}
+.form-row.cols2{grid-template-columns:1fr 1fr;}
+.form-row.cols3{grid-template-columns:1fr 1fr 1fr;}
+label.fl{font-size:.75rem;font-weight:600;color:var(--fm-mute);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem;}
+.form-group{display:flex;flex-direction:column;}
+
+/* Status badges */
+.s-planned{background:#6b7280;}.s-running{background:#f97316;}.s-deadline{background:var(--fm-red);}
+.s-completed{background:#22c55e;}.s-paused{background:#94a3b8;}.s-email{background:#3b82f6;}
+
+/* Tables */
+table.data-table{width:100%;border-collapse:collapse;}
+table.data-table thead th{font-size:.68rem;font-weight:600;color:var(--fm-mute);text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--fm-line);cursor:pointer;white-space:nowrap;}
+table.data-table thead th.r{text-align:right;}
+table.data-table tbody td{padding:.5rem .6rem;font-size:.87rem;border-bottom:1px solid var(--fm-grey-10);vertical-align:middle;}
+table.data-table tbody td.r{text-align:right;font-variant-numeric:tabular-nums;}
+table.data-table tbody tr:hover{background:var(--fm-grey-10);}
+.sort-asc::after{content:" ↑"}.sort-desc::after{content:" ↓"}
+
+/* Seasonal */
+.season-bar{height:28px;border-radius:3px;transition:width .3s;}
+.season-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;}
+.season-month{width:48px;font-size:.8rem;font-weight:600;}
+.season-val{width:44px;font-size:.8rem;font-variant-numeric:tabular-nums;text-align:right;}
+.season-input{width:70px;padding:.2rem .4rem;font-size:.82rem;}
+
+/* KPI tiles */
+.kpi-tile{background:#fff;border:1px solid var(--fm-line);border-radius:6px;padding:1rem 1.1rem;}
+.kpi-tile .kpi-label{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--fm-mute);}
+.kpi-tile .kpi-val{font-size:1.6rem;font-weight:700;margin:.3rem 0 .1rem;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;}
+.kpi-tile .kpi-sub{font-size:.72rem;color:var(--fm-mute);}
+
+/* Chips / tags */
+.chip{display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600;background:var(--fm-grey-10);color:var(--fm-grey-90);}
+.chip .x{cursor:pointer;opacity:.6;}.chip .x:hover{opacity:1;}
+
+/* Perf sub-tabs */
+.ptab{padding:.3rem .7rem;font-size:.78rem;cursor:pointer;border-radius:3px;color:var(--fm-mute);font-weight:500;}
+.ptab:hover{color:var(--fm-grey-90);}
+.ptab.active{background:var(--fm-grey-10);color:var(--fm-grey-90);font-weight:600;}
+
+/* Scrollbar */
+::-webkit-scrollbar{height:5px;width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--fm-grey-20);border-radius:3px;}
+</style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-screen-xl mx-auto px-5 py-6">
+
+<!-- HEADER -->
+<header class="flex items-center justify-between mb-5 flex-wrap gap-3">
+  <div class="flex items-center gap-4">
+    <div class="fm-wordmark">FILIPESMEDIA<span class="dot"></span></div>
+    <div style="width:1px;height:26px;background:var(--fm-line)"></div>
+    <div>
+      <div class="text-xs uppercase" style="color:var(--fm-mute);letter-spacing:.08em;font-weight:500;">Marketingový plánovač</div>
+      <h1 class="text-lg font-semibold" style="color:var(--fm-black);line-height:1.2;">Plánování kampaní &amp; obsahu</h1>
+    </div>
+  </div>
+  <div class="flex items-center gap-2 flex-wrap">
+    <div class="flex items-center gap-1">
+      <select id="clientSelect" style="font-weight:600;min-width:160px;" onchange="switchClient(this.value)"></select>
+      <button class="btn btn-ghost btn-sm" onclick="openAddClientModal()">+ Klient</button>
+    </div>
+    <button class="btn btn-accent btn-sm" onclick="openCampaignModal(null)">+ Nová kampaň</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<nav class="flex gap-1 mb-5 flex-wrap">
+  <span class="tab active" data-tab="overview" onclick="showTab('overview')">Přehled</span>
+  <span class="tab" data-tab="calendar" onclick="showTab('calendar')">Kalendář</span>
+  <span class="tab" data-tab="seasonal" onclick="showTab('seasonal')">Sezónnost</span>
+  <span class="tab" data-tab="performance" onclick="showTab('performance')">Výkon</span>
+  <span class="tab" data-tab="campaigns" onclick="showTab('campaigns')">Kampaně</span>
+  <span class="tab" data-tab="settings" onclick="showTab('settings')">Nastavení</span>
+</nav>
+
+<!-- TAB: PŘEHLED -->
+<div id="tab-overview" class="tab-panel">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5" id="overviewKpis"></div>
+  <div class="grid md:grid-cols-3 gap-4 mb-4">
+    <div class="card p-4 md:col-span-2">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold">Spend per platforma — posledních 6 měsíců</h3>
+        <span class="pill" style="background:var(--fm-grey-10);color:var(--fm-mute);" id="overviewSyncBadge">Offline</span>
+      </div>
+      <div style="height:220px;position:relative;"><canvas id="chartSpend"></canvas></div>
+    </div>
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-3">Aktivní kampaně</h3>
+      <div id="overviewActiveCamps" class="flex flex-col gap-2"></div>
+    </div>
+  </div>
+  <div class="card p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold">Sezónní index — hardware CZ (přehled roku)</h3>
+    </div>
+    <div style="height:160px;position:relative;"><canvas id="chartSeasonOverview"></canvas></div>
+  </div>
+</div>
+
+<!-- TAB: KALENDÁŘ -->
+<div id="tab-calendar" class="tab-panel hidden">
+  <div class="flex items-center gap-3 mb-4 flex-wrap">
+    <div class="flex items-center gap-2">
+      <label class="text-sm" style="color:var(--fm-mute)">Rok</label>
+      <select id="calYear" onchange="renderCalendar()">
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+        <option value="2027">2027</option>
+      </select>
+    </div>
+    <div class="flex items-center gap-2">
+      <label class="text-sm" style="color:var(--fm-mute)">Zobrazení</label>
+      <select id="calView" onchange="renderCalendar()">
+        <option value="year">Celý rok</option>
+        <option value="h1">Pololetí 1 (Jan–Jun)</option>
+        <option value="h2">Pololetí 2 (Jul–Dec)</option>
+        <option value="q1">Q1 (Jan–Bře)</option><option value="q2">Q2 (Dub–Čer)</option>
+        <option value="q3">Q3 (Čec–Zář)</option><option value="q4">Q4 (Říj–Pro)</option>
+        <option value="m1">Leden</option><option value="m2">Únor</option>
+        <option value="m3">Březen</option><option value="m4">Duben</option>
+        <option value="m5" selected>Květen</option><option value="m6">Červen</option>
+        <option value="m7">Červenec</option><option value="m8">Srpen</option>
+        <option value="m9">Září</option><option value="m10">Říjen</option>
+        <option value="m11">Listopad</option><option value="m12">Prosinec</option>
+      </select>
+    </div>
+    <div class="flex items-center gap-2">
+      <label class="text-sm" style="color:var(--fm-mute)">Status</label>
+      <select id="calFilter" onchange="renderCalendar()">
+        <option value="">Vše</option>
+      </select>
+    </div>
+    <button class="btn btn-ghost btn-sm ml-auto" onclick="openCampaignModal(null)">+ Přidat kampaň</button>
+  </div>
+
+  <!-- Timeline grid table -->
+  <div class="tl-wrap" id="calWrap"></div>
+
+  <div class="mt-2 flex flex-wrap gap-3 text-xs items-center" style="color:var(--fm-mute);">
+    <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:#f97316;vertical-align:middle;"></span>Aktivní</span>
+    <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:#6b7280;vertical-align:middle;"></span>Plánováno</span>
+    <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:var(--fm-red);vertical-align:middle;"></span>Deadline</span>
+    <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:#22c55e;vertical-align:middle;"></span>Dokončeno</span>
+    <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:#3b82f6;vertical-align:middle;"></span>Email/Newsletter</span>
+    <span class="ml-4"><em>Kliknutím na buňku upravíte kampaň · tažením přidáte novou</em></span>
+  </div>
+</div>
+
+<!-- TAB: SEZÓNNOST -->
+<div id="tab-seasonal" class="tab-panel hidden">
+  <div class="grid md:grid-cols-3 gap-4 mb-4">
+    <div class="card p-4 md:col-span-2">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold">Sezónní index — 12 měsíců</h3>
+        <span class="text-xs" style="color:var(--fm-mute)">Baseline = 1.0 (průměrný měsíc)</span>
+      </div>
+      <div style="height:220px;position:relative;"><canvas id="chartSeasonal"></canvas></div>
+      <p class="text-xs mt-3" style="color:var(--fm-mute);">Hodnoty reflektují průměrnou sezónnost hardware/e-commerce trhu v ČR. Upravte dle vlastních historických dat.</p>
+    </div>
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-3">Kalkulačka budgetů</h3>
+      <div class="form-group mb-3">
+        <label class="fl">Roční budget (Kč)</label>
+        <input type="number" id="budgetCalcAnnual" value="300000" oninput="renderBudgetCalc()" style="width:100%;">
+      </div>
+      <div id="budgetCalcResult" class="flex flex-col gap-1"></div>
+    </div>
+  </div>
+  <div class="card p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold">Upravit sezónní indexy</h3>
+      <button class="btn btn-ghost btn-sm" onclick="resetSeasonalData()">Obnovit výchozí</button>
+    </div>
+    <div class="text-xs mb-3" style="color:var(--fm-mute);">Upravte indexy podle historických dat vašeho klienta. Změny se uloží automaticky.</div>
+    <div id="seasonalEditor" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"></div>
+    <div class="mt-4 pt-4 border-t" style="border-color:var(--fm-line);">
+      <h4 class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--fm-mute);">České svátky &amp; události</h4>
+      <div class="flex flex-wrap gap-2 text-xs" id="czechHolidays"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: VÝKON -->
+<div id="tab-performance" class="tab-panel hidden">
+  <div class="flex items-center gap-2 mb-4 flex-wrap">
+    <div class="flex gap-1" id="perfPlatformTabs">
+      <span class="ptab active" data-ptab="all" onclick="switchPerfTab('all')">Všechny</span>
+      <span class="ptab" data-ptab="Google Ads" onclick="switchPerfTab('Google Ads')">Google Ads</span>
+      <span class="ptab" data-ptab="Sklik" onclick="switchPerfTab('Sklik')">Sklik</span>
+      <span class="ptab" data-ptab="Meta" onclick="switchPerfTab('Meta')">Meta</span>
+    </div>
+    <div class="ml-auto flex items-center gap-2 flex-wrap">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('csvImportInput').click()">↑ Import CSV</button>
+      <input type="file" id="csvImportInput" accept=".csv" style="display:none;" onchange="handleCsvImport(event)">
+      <span class="pill" style="background:var(--fm-grey-10);color:var(--fm-mute);" id="perfDataSource">data.json</span>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="perfKpis"></div>
+  <div class="grid md:grid-cols-2 gap-4 mb-4">
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-3">Spend per měsíc</h3>
+      <div style="height:200px;position:relative;"><canvas id="chartPerfSpend"></canvas></div>
+    </div>
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-3">CTR &amp; Konverze</h3>
+      <div style="height:200px;position:relative;"><canvas id="chartPerfConv"></canvas></div>
+    </div>
+  </div>
+  <div class="card p-4">
+    <h3 class="text-sm font-semibold mb-3">Kampaně — detailní výkon <span class="text-xs font-normal ml-2" style="color:var(--fm-mute);">Vyžaduje import denního CSV</span></h3>
+    <div style="overflow-x:auto;"><table class="data-table" id="perfCampsTable">
+      <thead><tr>
+        <th onclick="sortTable('perfCampsTable',0)">Kampaň</th>
+        <th class="r" onclick="sortTable('perfCampsTable',1)">Spend</th>
+        <th class="r" onclick="sortTable('perfCampsTable',2)">Kliky</th>
+        <th class="r" onclick="sortTable('perfCampsTable',3)">CTR</th>
+        <th class="r" onclick="sortTable('perfCampsTable',4)">CPC</th>
+        <th class="r" onclick="sortTable('perfCampsTable',5)">Konverze</th>
+        <th class="r" onclick="sortTable('perfCampsTable',6)">CPA</th>
+      </tr></thead>
+      <tbody id="perfCampsBody"><tr><td colspan="7" style="color:var(--fm-mute);padding:1.5rem;text-align:center;">Importujte CSV pro zobrazení dat kampaní</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- TAB: KAMPANĚ -->
+<div id="tab-campaigns" class="tab-panel hidden">
+  <div class="flex items-center gap-3 mb-4 flex-wrap">
+    <input type="text" id="campSearch" placeholder="Hledat kampaně…" style="width:200px;" oninput="renderCampaignsTab()">
+    <select id="campFilterPlatform" onchange="renderCampaignsTab()">
+      <option value="">Všechny platformy</option>
+    </select>
+    <select id="campFilterStatus" onchange="renderCampaignsTab()">
+      <option value="">Všechny statusy</option>
+      <option value="planned">Plánováno</option>
+      <option value="running">Aktivní</option>
+      <option value="completed">Dokončeno</option>
+      <option value="paused">Pozastaveno</option>
+      <option value="deadline">Deadline</option>
+    </select>
+    <button class="btn btn-accent btn-sm ml-auto" onclick="openCampaignModal(null)">+ Nová kampaň</button>
+  </div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="data-table" id="campsTable">
+      <thead><tr>
+        <th onclick="sortTable('campsTable',0)">Název</th>
+        <th onclick="sortTable('campsTable',1)">Platforma</th>
+        <th onclick="sortTable('campsTable',2)">Typ</th>
+        <th onclick="sortTable('campsTable',3)">Status</th>
+        <th onclick="sortTable('campsTable',4)">Od</th>
+        <th onclick="sortTable('campsTable',5)">Do</th>
+        <th class="r" onclick="sortTable('campsTable',6)">Budget</th>
+        <th class="r" onclick="sortTable('campsTable',7)">Spend</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="campsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB: NASTAVENÍ -->
+<div id="tab-settings" class="tab-panel hidden">
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-3">Konfigurace klienta</h3>
+      <div class="flex flex-col gap-3" id="clientConfigForm"></div>
+    </div>
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold">Správa klientů</h3>
+      </div>
+      <div id="clientsListSettings" class="flex flex-col gap-2 mb-3"></div>
+      <button class="btn btn-ghost btn-sm" onclick="openAddClientModal()">+ Přidat klienta</button>
+    </div>
+    <div class="card p-4" style="grid-column:1/-1;">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold">Platformy &amp; sub-úrovně (lanes)</h3>
+        <button class="btn btn-ghost btn-sm" onclick="addPlatform()">+ Přidat platformu</button>
+      </div>
+      <div class="text-xs mb-3" style="color:var(--fm-mute);">Pro každou platformu nastavte měsíční budget, barvu a volitelně sub-úrovně (např. Meta → Brand / Performance / Promo). Sub-úrovně se objeví jako podřádky v kalendáři.</div>
+      <div id="platformConfigForm" class="flex flex-col gap-3"></div>
+    </div>
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold">Typy kampaní</h3>
+        <button class="btn btn-ghost btn-sm" onclick="addTypeRow()">+ Přidat typ</button>
+      </div>
+      <div id="typesEditor" class="flex flex-col gap-2"></div>
+    </div>
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold">Statusy kampaní</h3>
+        <button class="btn btn-ghost btn-sm" onclick="addStatusRow()">+ Přidat status</button>
+      </div>
+      <div id="statusesEditor" class="flex flex-col gap-2"></div>
+    </div>
+    <div class="card p-4" style="grid-column:1/-1;">
+      <h3 class="text-sm font-semibold mb-3">Export &amp; Import dat</h3>
+      <div class="flex flex-wrap gap-2">
+        <button class="btn btn-ghost btn-sm" onclick="exportClientData()">↓ Exportovat data klienta (JSON)</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('importDataInput').click()">↑ Importovat data klienta (JSON)</button>
+        <input type="file" id="importDataInput" accept=".json" style="display:none;" onchange="importClientData(event)">
+        <button class="btn btn-ghost btn-sm" style="color:var(--fm-red);margin-left:auto;" onclick="if(confirm('Opravdu smazat všechna data tohoto klienta?'))clearClientData()">× Smazat data klienta</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: KAMPAŇ -->
+<div class="modal-overlay" id="campaignModal">
+  <div class="modal-box">
+    <h3 id="campModalTitle">Nová kampaň</h3>
+    <input type="hidden" id="campId">
+    <div class="form-row cols2">
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="fl">Název kampaně *</label>
+        <input type="text" id="campName" placeholder="např. Jarní PMAX — spojovací materiál">
+      </div>
+    </div>
+    <div class="form-row cols2">
+      <div class="form-group">
+        <label class="fl">Platforma</label>
+        <select id="campPlatform" onchange="refreshCampLaneOptions()"></select>
+      </div>
+      <div class="form-group" id="campLaneWrap">
+        <label class="fl">Úroveň / Sub-kategorie</label>
+        <select id="campLane"></select>
+      </div>
+    </div>
+    <div class="form-row cols2">
+      <div class="form-group">
+        <label class="fl">Typ kampaně</label>
+        <select id="campType"></select>
+      </div>
+      <div class="form-group">
+        <label class="fl">Status</label>
+        <select id="campStatus"></select>
+      </div>
+    </div>
+    <div class="form-row cols2">
+      <div class="form-group">
+        <label class="fl">Datum od *</label>
+        <input type="date" id="campStart">
+      </div>
+      <div class="form-group">
+        <label class="fl">Datum do *</label>
+        <input type="date" id="campEnd">
+      </div>
+    </div>
+    <div class="form-row cols2">
+      <div class="form-group">
+        <label class="fl">Celkový budget (Kč)</label>
+        <input type="number" id="campBudget" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="fl">Barva (nepovinné)</label>
+        <input type="color" id="campColor" style="height:38px;width:100%;cursor:pointer;padding:2px;">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="fl">Poznámky / brief</label>
+        <textarea id="campNotes" rows="3" placeholder="Popis, cíl kampaně, KPI…" style="resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div class="flex justify-between gap-2 mt-2">
+      <button class="btn btn-ghost btn-sm" id="campDeleteBtn" onclick="deleteCampaign()" style="color:var(--fm-red);">Smazat</button>
+      <div class="flex gap-2">
+        <button class="btn btn-ghost" onclick="closeCampaignModal()">Zrušit</button>
+        <button class="btn btn-accent" onclick="saveCampaign()">Uložit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PŘIDAT KLIENTA -->
+<div class="modal-overlay" id="addClientModal">
+  <div class="modal-box" style="width:360px;">
+    <h3>Přidat klienta</h3>
+    <div class="form-group mb-4">
+      <label class="fl">Název klienta *</label>
+      <input type="text" id="newClientName" placeholder="např. Šrouby.cz" style="width:100%;">
+    </div>
+    <div class="flex justify-end gap-2">
+      <button class="btn btn-ghost" onclick="document.getElementById('addClientModal').classList.remove('open')">Zrušit</button>
+      <button class="btn btn-accent" onclick="addClient()">Přidat</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLTIP -->
+<div class="tl-tooltip" id="tlTooltip" style="display:none;"></div>
+
+<footer class="mt-8 flex items-center justify-between text-xs" style="color:var(--fm-mute);">
+  <div class="fm-wordmark" style="font-size:.78rem;">FILIPESMEDIA<span class="dot"></span></div>
+  <span>Marketingový plánovač · v1.0</span>
+</footer>
+</div>
+
+<script>
+// ─── CONSTANTS ──────────────────────────────────────────────────────────────
+const DEFAULT_SEASONAL = [
+  {month:1,label:'Leden',abbr:'Led',index:0.65,notes:'Nízká sezóna, útlum po Vánocích'},
+  {month:2,label:'Únor',abbr:'Úno',index:0.70,notes:'Mírný nárůst, plánování jara'},
+  {month:3,label:'Březen',abbr:'Bře',index:1.10,notes:'Předjarní přípravy, DIY nárůst'},
+  {month:4,label:'Duben',abbr:'Dub',index:1.45,notes:'Jarní sezóna, Velikonoce, výstavba'},
+  {month:5,label:'Květen',abbr:'Kvě',index:1.50,notes:'Vrchol — Svátek práce, stavební sezóna'},
+  {month:6,label:'Červen',abbr:'Čer',index:1.30,notes:'Letní výstavba, silná poptávka'},
+  {month:7,label:'Červenec',abbr:'Čec',index:1.10,notes:'Dovolené, mírný pokles'},
+  {month:8,label:'Srpen',abbr:'Srp',index:1.15,notes:'Návrat z dovolených, late-summer build'},
+  {month:9,label:'Září',abbr:'Zář',index:1.35,notes:'Podzimní sezóna začíná'},
+  {month:10,label:'Říjen',abbr:'Říj',index:1.40,notes:'Podzimní vrchol, dokončení staveb'},
+  {month:11,label:'Listopad',abbr:'Lis',index:0.95,notes:'Rychlý útlum před zimou'},
+  {month:12,label:'Prosinec',abbr:'Pro',index:0.75,notes:'Vánoce, minimum výstavby'},
+];
+
+const FMP_VERSION = '3'; // bump to force-reset localStorage when data model changes
+
+const DEFAULT_PLATFORMS = {
+  'Google Ads':{monthly:11000,color:'#4285F4',lanes:[]},
+  'Sklik':{monthly:4000,color:'#CC0000',lanes:[]},
+  'Meta':{monthly:9000,color:'#1877F2',lanes:[]},
+  'Email':{monthly:0,color:'#3b82f6',lanes:[]},
+  'Mergado':{monthly:586,color:'#555555',lanes:[]},
+  'Heureka':{monthly:0,color:'#FF6900',lanes:[]},
+  'Organic Social':{monthly:0,color:'#a855f7',lanes:[]},
+};
+
+const DEFAULT_STATUSES = [
+  {key:'planned',   label:'Plánováno',   color:'#6b7280'},
+  {key:'running',   label:'Aktivní',     color:'#f97316'},
+  {key:'paused',    label:'Pozastaveno', color:'#94a3b8'},
+  {key:'completed', label:'Dokončeno',   color:'#22c55e'},
+  {key:'deadline',  label:'Deadline',    color:'#DC2626'},
+];
+const DEFAULT_TYPES = [
+  {key:'performance', label:'Performance'},
+  {key:'brand',       label:'Brand'},
+  {key:'remarketing', label:'Remarketing'},
+  {key:'newsletter',  label:'Email/NL'},
+  {key:'promo',       label:'Promo'},
+  {key:'seo',         label:'SEO'},
+  {key:'social',      label:'Social'},
+];
+// Helpers: resolve current taxonomy from state (with defaults as fallback)
+function getTypes()    { return (state&&state.taxonomy&&state.taxonomy.types)    || DEFAULT_TYPES; }
+function getStatuses() { return (state&&state.taxonomy&&state.taxonomy.statuses) || DEFAULT_STATUSES; }
+function typeLabel(k){const t=getTypes().find(x=>x.key===k);return t?t.label:k;}
+function statusLabel(k){const s=getStatuses().find(x=>x.key===k);return s?s.label:k;}
+function statusColor(k){const s=getStatuses().find(x=>x.key===k);return s?s.color:'#999';}
+// Legacy compat — code paths still use these maps; populated from state on render
+let STATUS_LABELS={};
+let STATUS_COLORS={};
+let TYPE_LABELS={};
+function refreshTaxonomyCache(){
+  STATUS_LABELS={};STATUS_COLORS={};TYPE_LABELS={};
+  getStatuses().forEach(s=>{STATUS_LABELS[s.key]=s.label;STATUS_COLORS[s.key]=s.color;});
+  getTypes().forEach(t=>{TYPE_LABELS[t.key]=t.label;});
+}
+const CZECH_HOLIDAYS = [
+  {date:'01-01',name:'Nový rok'},{date:'04-18',name:'Velký pátek 2025'},
+  {date:'05-01',name:'Svátek práce'},{date:'05-08',name:'Den vítězství'},
+  {date:'07-05',name:'Cyril a Metoděj'},{date:'07-06',name:'Jan Hus'},
+  {date:'09-28',name:'Den české státnosti'},{date:'10-28',name:'Vznik ČSR'},
+  {date:'11-02',name:'Dušičky'},{date:'11-17',name:'Den svobody'},
+  {date:'12-06',name:'Mikuláš'},{date:'12-24',name:'Štědrý den'},
+  {date:'12-25',name:'1. svátek vánoční'},{date:'12-26',name:'2. svátek vánoční'},
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let clients = [];
+let activeClientId = null;
+let state = null;
+let charts = {};
+let dailyData = []; // imported CSV rows (session only)
+let perfTab = 'all';
+let dragState = null;
+
+function makeDefaultState(name) {
+  return {
+    config:{klient:name,manazer:'',manazerEmail:'',dataJsonUrl:'',activePlatforms:Object.keys(DEFAULT_PLATFORMS)},
+    platformBudgets:JSON.parse(JSON.stringify(DEFAULT_PLATFORMS)),
+    taxonomy:{
+      types:JSON.parse(JSON.stringify(DEFAULT_TYPES)),
+      statuses:JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
+    },
+    campaigns:[],
+    seasonalData:JSON.parse(JSON.stringify(DEFAULT_SEASONAL)),
+    performanceData:{monthly:[],lastSync:null},
+  };
+}
+
+function makeHardsmileState(){
+  const s=makeDefaultState('Hardsmile');
+  s.config.manazer='Filip';
+  s.platformBudgets={
+    'Meta':          {monthly:25000,color:'#1877F2',lanes:['Brand','Performance','Promo']},
+    'Google Ads':    {monthly:18000,color:'#4285F4',lanes:['Search','Shopping','Remarketing']},
+    'Sklik':         {monthly:6000, color:'#CC0000',lanes:['Search','Sklik Zboží']},
+    'Email':         {monthly:0,    color:'#3b82f6',lanes:['Newsletter','Automatizace']},
+    'Heureka':       {monthly:3500, color:'#FF6900',lanes:[]},
+    'Mergado':       {monthly:2200, color:'#555555',lanes:[]},
+    'Organic Social':{monthly:0,    color:'#a855f7',lanes:[]},
+  };
+  s.config.activePlatforms=Object.keys(s.platformBudgets);
+  let _ci=1;
+  const cid=()=>'hs_'+(_ci++).toString().padStart(3,'0');
+  s.campaigns=[
+    // ── META — Brand ──────────────────────────────────────────────────────────
+    {id:cid(),name:'Novoroční kampaň',platform:'Meta',lane:'Brand',type:'brand',status:'completed',startDate:'2026-01-05',endDate:'2026-01-25',budgetTotal:15000,color:'#1877F2',notes:'Nový rok, nové začátky',showInCalendar:true,spend:14200,conversions:142,clicks:3800,impressions:95000},
+    {id:cid(),name:'Jarní sezóna — brand',platform:'Meta',lane:'Brand',type:'brand',status:'completed',startDate:'2026-03-02',endDate:'2026-05-17',budgetTotal:55000,color:'#1877F2',notes:'Jarní uvítací kampaň',showInCalendar:true,spend:52800,conversions:685,clicks:14200,impressions:358000},
+    {id:cid(),name:'Back to school',platform:'Meta',lane:'Brand',type:'brand',status:'planned',startDate:'2026-08-17',endDate:'2026-09-06',budgetTotal:19000,color:'#1877F2',notes:'Zpátky do školy',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'Podzimní kampaň',platform:'Meta',lane:'Brand',type:'brand',status:'planned',startDate:'2026-09-07',endDate:'2026-10-18',budgetTotal:42000,color:'#1877F2',notes:'Podzimní sezóna',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'Vánoce — brand',platform:'Meta',lane:'Brand',type:'brand',status:'planned',startDate:'2026-11-30',endDate:'2026-12-20',budgetTotal:30000,color:'#dc2626',notes:'Vánoční brand kampaň',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    // ── META — Performance ────────────────────────────────────────────────────
+    {id:cid(),name:'Always-on Performance',platform:'Meta',lane:'Performance',type:'performance',status:'running',startDate:'2026-01-01',endDate:'2026-12-31',budgetTotal:84000,color:'#1877F2',notes:'Celoroční výkonnostní kampaň',showInCalendar:true,spend:32500,conversions:512,clicks:11800,impressions:240000},
+    // ── META — Promo ──────────────────────────────────────────────────────────
+    {id:cid(),name:'Valentýn — Love promo',platform:'Meta',lane:'Promo',type:'promo',status:'completed',startDate:'2026-02-02',endDate:'2026-02-14',budgetTotal:18000,color:'#e11d48',notes:'Valentýn -20%',showInCalendar:true,spend:17500,conversions:218,clicks:5100,impressions:128000},
+    {id:cid(),name:'Den matek — promo',platform:'Meta',lane:'Promo',type:'promo',status:'completed',startDate:'2026-05-04',endDate:'2026-05-10',budgetTotal:12000,color:'#f43f5e',notes:'Den matek 10.5.',showInCalendar:true,spend:11600,conversions:148,clicks:3200,impressions:82000},
+    {id:cid(),name:'Letní výprodej',platform:'Meta',lane:'Promo',type:'promo',status:'planned',startDate:'2026-06-22',endDate:'2026-07-12',budgetTotal:22000,color:'#f97316',notes:'Letní slevy -30%',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'Black Friday',platform:'Meta',lane:'Promo',type:'promo',status:'planned',startDate:'2026-11-16',endDate:'2026-11-29',budgetTotal:35000,color:'#111827',notes:'BF -40%',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'Vánoce — promo',platform:'Meta',lane:'Promo',type:'promo',status:'planned',startDate:'2026-12-07',endDate:'2026-12-23',budgetTotal:25000,color:'#16a34a',notes:'Vánoční slevy -25%',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    // ── EMAIL — Newsletter (monthly) ──────────────────────────────────────────
+    {id:cid(),name:'NL — Leden',platform:'Email',lane:'Newsletter',type:'newsletter',status:'completed',startDate:'2026-01-08',endDate:'2026-01-08',budgetTotal:0,color:'#3b82f6',notes:'',showInCalendar:true,spend:0,conversions:24,clicks:412,impressions:3800},
+    {id:cid(),name:'NL — Únor / Valentýn',platform:'Email',lane:'Newsletter',type:'newsletter',status:'completed',startDate:'2026-02-10',endDate:'2026-02-10',budgetTotal:0,color:'#3b82f6',notes:'Valentýn special',showInCalendar:true,spend:0,conversions:31,clicks:520,impressions:3950},
+    {id:cid(),name:'NL — Březen',platform:'Email',lane:'Newsletter',type:'newsletter',status:'completed',startDate:'2026-03-05',endDate:'2026-03-05',budgetTotal:0,color:'#3b82f6',notes:'',showInCalendar:true,spend:0,conversions:28,clicks:445,impressions:4100},
+    {id:cid(),name:'NL — Duben / Velikonoce',platform:'Email',lane:'Newsletter',type:'newsletter',status:'completed',startDate:'2026-04-10',endDate:'2026-04-10',budgetTotal:0,color:'#3b82f6',notes:'Velikonoční vydání',showInCalendar:true,spend:0,conversions:35,clicks:580,impressions:4250},
+    {id:cid(),name:'NL — Květen / Den matek',platform:'Email',lane:'Newsletter',type:'newsletter',status:'completed',startDate:'2026-05-07',endDate:'2026-05-07',budgetTotal:0,color:'#3b82f6',notes:'',showInCalendar:true,spend:0,conversions:29,clicks:495,impressions:4100},
+    {id:cid(),name:'NL — Červen',platform:'Email',lane:'Newsletter',type:'newsletter',status:'planned',startDate:'2026-06-04',endDate:'2026-06-04',budgetTotal:0,color:'#3b82f6',notes:'',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'NL — Červenec',platform:'Email',lane:'Newsletter',type:'newsletter',status:'planned',startDate:'2026-07-09',endDate:'2026-07-09',budgetTotal:0,color:'#3b82f6',notes:'',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'NL — Srpen / Back to school',platform:'Email',lane:'Newsletter',type:'newsletter',status:'planned',startDate:'2026-08-06',endDate:'2026-08-06',budgetTotal:0,color:'#3b82f6',notes:'',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'NL — Září',platform:'Email',lane:'Newsletter',type:'newsletter',status:'planned',startDate:'2026-09-10',endDate:'2026-09-10',budgetTotal:0,color:'#3b82f6',notes:'',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'NL — Říjen',platform:'Email',lane:'Newsletter',type:'newsletter',status:'planned',startDate:'2026-10-08',endDate:'2026-10-08',budgetTotal:0,color:'#3b82f6',notes:'',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'NL — Listopad / BF',platform:'Email',lane:'Newsletter',type:'newsletter',status:'planned',startDate:'2026-11-05',endDate:'2026-11-05',budgetTotal:0,color:'#3b82f6',notes:'BF teaser',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'NL — Prosinec / Vánoce',platform:'Email',lane:'Newsletter',type:'newsletter',status:'planned',startDate:'2026-12-03',endDate:'2026-12-03',budgetTotal:0,color:'#3b82f6',notes:'Vánoční vydání',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    // ── EMAIL — Automatizace ──────────────────────────────────────────────────
+    {id:cid(),name:'Welcome flow',platform:'Email',lane:'Automatizace',type:'newsletter',status:'running',startDate:'2026-01-01',endDate:'2026-12-31',budgetTotal:0,color:'#0ea5e9',notes:'Uvítací série 3 emailů',showInCalendar:true,spend:0,conversions:96,clicks:1240,impressions:8800},
+    {id:cid(),name:'Abandoned cart',platform:'Email',lane:'Automatizace',type:'newsletter',status:'running',startDate:'2026-01-01',endDate:'2026-12-31',budgetTotal:0,color:'#0ea5e9',notes:'Opuštěný košík flow',showInCalendar:true,spend:0,conversions:148,clicks:1860,impressions:6200},
+    // ── GOOGLE ADS — Search ───────────────────────────────────────────────────
+    {id:cid(),name:'Search — Q1',platform:'Google Ads',lane:'Search',type:'performance',status:'completed',startDate:'2026-01-01',endDate:'2026-03-31',budgetTotal:54000,color:'#4285F4',notes:'Q1 search',showInCalendar:true,spend:51800,conversions:412,clicks:9800,impressions:185000},
+    {id:cid(),name:'Search — Q2',platform:'Google Ads',lane:'Search',type:'performance',status:'completed',startDate:'2026-04-01',endDate:'2026-06-30',budgetTotal:54000,color:'#4285F4',notes:'Q2 search',showInCalendar:true,spend:52100,conversions:448,clicks:10400,impressions:196000},
+    {id:cid(),name:'Search — Q3',platform:'Google Ads',lane:'Search',type:'performance',status:'planned',startDate:'2026-07-01',endDate:'2026-09-30',budgetTotal:54000,color:'#4285F4',notes:'Q3 search',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    {id:cid(),name:'Search — Q4',platform:'Google Ads',lane:'Search',type:'performance',status:'planned',startDate:'2026-10-01',endDate:'2026-12-31',budgetTotal:63000,color:'#4285F4',notes:'Q4 — navýšeno BF/Vánoce',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    // ── GOOGLE ADS — Shopping ─────────────────────────────────────────────────
+    {id:cid(),name:'Shopping — celoroční',platform:'Google Ads',lane:'Shopping',type:'performance',status:'running',startDate:'2026-01-01',endDate:'2026-12-31',budgetTotal:72000,color:'#34a853',notes:'Google Shopping feed',showInCalendar:true,spend:41500,conversions:680,clicks:18200,impressions:420000},
+    // ── GOOGLE ADS — Remarketing ──────────────────────────────────────────────
+    {id:cid(),name:'Remarketing — celoroční',platform:'Google Ads',lane:'Remarketing',type:'remarketing',status:'running',startDate:'2026-01-01',endDate:'2026-12-31',budgetTotal:24000,color:'#fbbc04',notes:'RLSA + display remarketing',showInCalendar:true,spend:9800,conversions:198,clicks:3200,impressions:145000},
+    // ── SKLIK — Search ────────────────────────────────────────────────────────
+    {id:cid(),name:'Sklik Search — H1',platform:'Sklik',lane:'Search',type:'performance',status:'completed',startDate:'2026-01-01',endDate:'2026-06-30',budgetTotal:36000,color:'#CC0000',notes:'H1 search',showInCalendar:true,spend:34500,conversions:285,clicks:7200,impressions:95000},
+    {id:cid(),name:'Sklik Search — H2',platform:'Sklik',lane:'Search',type:'performance',status:'planned',startDate:'2026-07-01',endDate:'2026-12-31',budgetTotal:36000,color:'#CC0000',notes:'H2 search',showInCalendar:true,spend:0,conversions:0,clicks:0,impressions:0},
+    // ── SKLIK — Sklik Zboží ───────────────────────────────────────────────────
+    {id:cid(),name:'Sklik Zboží — celoroční',platform:'Sklik',lane:'Sklik Zboží',type:'performance',status:'running',startDate:'2026-01-01',endDate:'2026-12-31',budgetTotal:36000,color:'#7c2d12',notes:'Produktový feed Sklik',showInCalendar:true,spend:15200,conversions:248,clicks:6500,impressions:128000},
+    // ── HEUREKA ───────────────────────────────────────────────────────────────
+    {id:cid(),name:'Heureka — produktový listing',platform:'Heureka',lane:'',type:'performance',status:'running',startDate:'2026-01-01',endDate:'2026-12-31',budgetTotal:42000,color:'#FF6900',notes:'Celoroční produktový listing',showInCalendar:true,spend:21800,conversions:372,clicks:10400,impressions:248000},
+  ];
+  return s;
+}
+
+// ─── PERSISTENCE ─────────────────────────────────────────────────────────────
+function saveClients(){try{localStorage.setItem('fmp_clients',JSON.stringify(clients));}catch(e){}}
+function loadClients(){try{const r=localStorage.getItem('fmp_clients');if(r)clients=JSON.parse(r);}catch(e){clients=[];}}
+function saveActiveId(){try{localStorage.setItem('fmp_active',activeClientId);}catch(e){}}
+function loadActiveId(){try{return localStorage.getItem('fmp_active');}catch(e){return null;}}
+function saveState(){if(!activeClientId)return;try{localStorage.setItem('fmp_data_'+activeClientId,JSON.stringify(state));}catch(e){}}
+function loadStateForClient(id){try{const r=localStorage.getItem('fmp_data_'+id);if(r){const s=JSON.parse(r);
+  if(!s.platformBudgets)s.platformBudgets=JSON.parse(JSON.stringify(DEFAULT_PLATFORMS));
+  // Ensure every platform has a lanes array
+  Object.keys(s.platformBudgets).forEach(p=>{if(!Array.isArray(s.platformBudgets[p].lanes))s.platformBudgets[p].lanes=[];});
+  // Ensure taxonomy exists
+  if(!s.taxonomy)s.taxonomy={types:JSON.parse(JSON.stringify(DEFAULT_TYPES)),statuses:JSON.parse(JSON.stringify(DEFAULT_STATUSES))};
+  if(!Array.isArray(s.taxonomy.types))s.taxonomy.types=JSON.parse(JSON.stringify(DEFAULT_TYPES));
+  if(!Array.isArray(s.taxonomy.statuses))s.taxonomy.statuses=JSON.parse(JSON.stringify(DEFAULT_STATUSES));
+  // Ensure campaigns have lane (default empty string)
+  if(Array.isArray(s.campaigns))s.campaigns.forEach(c=>{if(typeof c.lane==='undefined')c.lane='';});
+  return s;
+}}catch(e){}return null;}
+
+function deepClone(o){return JSON.parse(JSON.stringify(o));}
+
+// ─── CLIENT MANAGEMENT ───────────────────────────────────────────────────────
+function initClients(){
+  // Version migration: clear stale localStorage data on version bump
+  if(localStorage.getItem('fmp_version')!==FMP_VERSION){
+    Object.keys(localStorage).filter(k=>k.startsWith('fmp_')).forEach(k=>localStorage.removeItem(k));
+    localStorage.setItem('fmp_version',FMP_VERSION);
+  }
+  loadClients();
+  const savedId=loadActiveId();
+  if(clients.length===0){
+    const id='client_hardsmile';
+    clients=[{id,name:'Hardsmile'}];
+    saveClients();
+    const s=makeHardsmileState();
+    localStorage.setItem('fmp_data_'+id,JSON.stringify(s));
+  }
+  activeClientId=(savedId&&clients.find(c=>c.id===savedId))?savedId:clients[0].id;
+  const loaded=loadStateForClient(activeClientId);
+  state=loaded||makeDefaultState(clients.find(c=>c.id===activeClientId)?.name||'Klient');
+  saveActiveId();
+}
+
+function renderClientSelector(){
+  const sel=document.getElementById('clientSelect');
+  sel.innerHTML=clients.map(c=>`<option value="${c.id}"${c.id===activeClientId?' selected':''}>${esc(c.name)}</option>`).join('');
+}
+
+function switchClient(id){
+  saveState();
+  activeClientId=id;
+  saveActiveId();
+  const loaded=loadStateForClient(id);
+  state=loaded||makeDefaultState(clients.find(c=>c.id===id)?.name||'Klient');
+  dailyData=[];
+  renderAll();
+}
+
+function openAddClientModal(){document.getElementById('newClientName').value='';document.getElementById('addClientModal').classList.add('open');}
+
+function addClient(){
+  const name=document.getElementById('newClientName').value.trim();
+  if(!name)return;
+  const id='client_'+Date.now();
+  clients.push({id,name});
+  saveClients();
+  const s=makeDefaultState(name);
+  localStorage.setItem('fmp_data_'+id,JSON.stringify(s));
+  document.getElementById('addClientModal').classList.remove('open');
+  renderClientSelector();
+  switchClient(id);
+}
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────────────────
+let activeTab='overview';
+function showTab(id){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.add('hidden'));
+  document.querySelectorAll('[data-tab]').forEach(t=>{t.classList.toggle('active',t.dataset.tab===id);});
+  document.getElementById('tab-'+id).classList.remove('hidden');
+  activeTab=id;
+  if(id==='overview')renderOverview();
+  else if(id==='calendar')renderCalendar();
+  else if(id==='seasonal')renderSeasonal();
+  else if(id==='performance')renderPerformance();
+  else if(id==='campaigns')renderCampaignsTab();
+  else if(id==='settings')renderSettings();
+}
+
+// ─── UTILITY ─────────────────────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtKc(n){if(!n&&n!==0)return'—';return Math.round(n).toLocaleString('cs-CZ')+ ' Kč';}
+function fmtNum(n){if(!n&&n!==0)return'—';return Math.round(n).toLocaleString('cs-CZ');}
+function fmtPct(n){if(!n&&n!==0)return'—';return n.toFixed(2)+'%';}
+function fmtDate(s){if(!s)return'—';const d=new Date(s);return d.toLocaleDateString('cs-CZ',{day:'numeric',month:'short',year:'numeric'});}
+function fmtDateShort(s){if(!s)return'—';const d=new Date(s);return d.toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric'});}
+function platColor(p){return state.platformBudgets[p]?.color||DEFAULT_PLATFORMS[p]?.color||'#999';}
+
+function dayOfYear(dateStr,year){
+  const d=new Date(dateStr);const s=new Date(year,0,1);
+  return Math.floor((d-s)/86400000);
+}
+function daysInYear(year){return ((new Date(year,11,31)-new Date(year,0,1))/86400000)+1;}
+
+function campStatusBadge(s){
+  const c=STATUS_COLORS[s]||'#999';const l=STATUS_LABELS[s]||s;
+  return `<span class="pill s-${s}" style="background:${c};color:#fff;">${l}</span>`;
+}
+
+function getPlatformMonthlySpend(platform,period){
+  return (state.performanceData.monthly||[]).filter(r=>r.platforma===platform&&r.obdobi===period).reduce((a,r)=>a+r.spend,0);
+}
+
+// ─── OVERVIEW TAB ────────────────────────────────────────────────────────────
+function renderOverview(){
+  const now=new Date();
+  const curMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthly=state.performanceData.monthly||[];
+  const thisMonthSpend=monthly.filter(r=>r.obdobi===curMonth).reduce((a,r)=>a+r.spend,0);
+  const activeCamps=state.campaigns.filter(c=>c.status==='running'||c.status==='deadline');
+  const totalBudget=activeCamps.reduce((a,c)=>a+(c.budgetTotal||0),0);
+
+  document.getElementById('overviewKpis').innerHTML=`
+    <div class="kpi-tile"><div class="kpi-label">Spend tento měsíc</div><div class="kpi-val num">${fmtKc(thisMonthSpend)}</div><div class="kpi-sub">${curMonth.replace('-','/')}</div></div>
+    <div class="kpi-tile"><div class="kpi-label">Aktivní kampaně</div><div class="kpi-val">${activeCamps.length}</div><div class="kpi-sub">běží právě teď</div></div>
+    <div class="kpi-tile"><div class="kpi-label">Budget aktivních</div><div class="kpi-val num">${fmtKc(totalBudget)}</div><div class="kpi-sub">celkový budget</div></div>
+    <div class="kpi-tile" style="border-color:var(--fm-red);background:var(--fm-red-bg);">
+      <div class="kpi-label" style="color:var(--fm-red);">Kampaně v plánu</div>
+      <div class="kpi-val kpi-accent">${state.campaigns.filter(c=>c.status==='planned').length}</div>
+      <div class="kpi-sub">připravených</div>
+    </div>`;
+
+  document.getElementById('overviewSyncBadge').innerHTML=state.performanceData.lastSync?
+    `<span style="width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;"></span>Sync ${new Date(state.performanceData.lastSync).toLocaleDateString('cs-CZ')}`:'Offline — žádná data';
+
+  // Active campaigns list
+  const acEl=document.getElementById('overviewActiveCamps');
+  if(activeCamps.length===0){acEl.innerHTML='<p class="text-sm" style="color:var(--fm-mute);">Žádné aktivní kampaně</p>';}
+  else{acEl.innerHTML=activeCamps.slice(0,6).map(c=>`
+    <div class="flex items-center gap-2 cursor-pointer hover:opacity-75" onclick="openCampaignModal('${c.id}')">
+      <span style="width:10px;height:10px;border-radius:2px;background:${c.color||STATUS_COLORS[c.status]||platColor(c.platform)};flex-shrink:0;"></span>
+      <span class="text-sm font-medium truncate flex-1">${esc(c.name)}</span>
+      <span class="text-xs" style="color:var(--fm-mute);">${c.platform}</span>
+    </div>`).join('');}
+
+  // Spend chart — last 6 months
+  const months6=[];const now2=new Date();
+  for(let i=5;i>=0;i--){const d=new Date(now2.getFullYear(),now2.getMonth()-i,1);months6.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const platforms=Object.keys(state.platformBudgets).filter(p=>state.config.activePlatforms?.includes(p));
+  const datasets=platforms.map(p=>({
+    label:p,
+    data:months6.map(m=>getPlatformMonthlySpend(p,m)),
+    backgroundColor:platColor(p),borderColor:platColor(p),borderWidth:0,borderRadius:3,
+  }));
+  if(charts.spend)charts.spend.destroy();
+  const ctx=document.getElementById('chartSpend').getContext('2d');
+  charts.spend=new Chart(ctx,{type:'bar',data:{labels:months6.map(m=>{const[y,mo]=m.split('-');return['','Led','Úno','Bře','Dub','Kvě','Čer','Čec','Srp','Zář','Říj','Lis','Pro'][parseInt(mo)];}),datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>v.toLocaleString('cs-CZ')}}}}});
+
+  // Season overview chart
+  const sd=state.seasonalData;
+  if(charts.seasonOverview)charts.seasonOverview.destroy();
+  const ctx2=document.getElementById('chartSeasonOverview').getContext('2d');
+  charts.seasonOverview=new Chart(ctx2,{type:'bar',data:{
+    labels:sd.map(s=>s.abbr),
+    datasets:[{label:'Sezónní index',data:sd.map(s=>s.index),backgroundColor:sd.map(s=>s.index>=1.3?'rgba(220,38,38,.7)':s.index>=1.0?'rgba(234,179,8,.7)':'rgba(156,163,175,.7)'),borderRadius:3}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{min:0,max:2,grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>v.toFixed(1)}}}}});
+}
+
+// ─── CALENDAR TAB — ISO week grid ─────────────────────────────────────────────
+
+// ISO week helpers
+function isoWeekStart(year,week){
+  // Monday of ISO week `week` in `year`
+  const jan4=new Date(year,0,4);
+  const dow=jan4.getDay()||7; // 1=Mon … 7=Sun
+  const w1Mon=new Date(jan4);
+  w1Mon.setDate(jan4.getDate()-(dow-1));
+  const d=new Date(w1Mon);
+  d.setDate(w1Mon.getDate()+(week-1)*7);
+  return d;
+}
+function isoWeekOf(date){
+  const d=new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+3-(d.getDay()+6)%7);
+  const w1=new Date(d.getFullYear(),0,4);
+  return 1+Math.round(((d-w1)/86400000-3+(w1.getDay()+6)%7)/7);
+}
+function isoWeekYear(date){
+  const d=new Date(date);d.setDate(d.getDate()+3-(d.getDay()+6)%7);
+  return d.getFullYear();
+}
+function weeksInYear(year){
+  return isoWeekOf(new Date(year,11,28));
+}
+
+function populateCalFilter(){
+  const sel=document.getElementById('calFilter');
+  if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Vše</option>'+getStatuses().map(s=>`<option value="${esc(s.key)}">${esc(s.label)}</option>`).join('');
+  sel.value=cur;
+}
+
+function ymdISO(d){return d.toISOString().split('T')[0];}
+function ymdParse(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+
+function renderCalendar(){
+  refreshTaxonomyCache();
+  populateCalFilter();
+  const year=parseInt(document.getElementById('calYear').value)||2026;
+  const view=document.getElementById('calView').value;
+  const statusFilter=document.getElementById('calFilter').value;
+
+  // Determine day range for view
+  let dFrom,dTo; // inclusive Date objects (local midnight)
+  const MONTHS=['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+  const ABBR=['Led','Úno','Bře','Dub','Kvě','Čer','Čec','Srp','Zář','Říj','Lis','Pro'];
+  function makeRange(mFrom,mTo){
+    dFrom=new Date(year,mFrom,1);
+    dTo=new Date(year,mTo+1,0); // last day of mTo
+  }
+  if(view==='year'){makeRange(0,11);}
+  else if(view==='h1'){makeRange(0,5);}
+  else if(view==='h2'){makeRange(6,11);}
+  else if(view==='q1'){makeRange(0,2);}
+  else if(view==='q2'){makeRange(3,5);}
+  else if(view==='q3'){makeRange(6,8);}
+  else if(view==='q4'){makeRange(9,11);}
+  else if(view&&view[0]==='m'){const m=parseInt(view.slice(1))-1;makeRange(m,m);}
+  else {makeRange(0,11);}
+
+  // Build day metadata array
+  const days=[];
+  for(let d=new Date(dFrom);d<=dTo;d.setDate(d.getDate()+1)){
+    const dd=new Date(d);
+    days.push({date:dd,dow:dd.getDay(),m:dd.getMonth(),day:dd.getDate(),iso:ymdISO(dd)});
+  }
+  const totalDays=days.length;
+
+  // Cell width based on day count
+  let cellW;
+  if(totalDays<=31) cellW=34;        // single month
+  else if(totalDays<=92) cellW=14;   // quarter
+  else if(totalDays<=184) cellW=8;   // half-year
+  else cellW=5;                      // full year
+
+  // Today highlight
+  const today=new Date();today.setHours(0,0,0,0);
+  const todayISO=ymdISO(today);
+
+  // Build month spans
+  const monthSpans=[];
+  let lastM=-1,lastSpan=null;
+  days.forEach((d,i)=>{
+    if(d.m!==lastM){
+      if(lastSpan)monthSpans.push(lastSpan);
+      lastM=d.m;lastSpan={m:d.m,span:1,startIdx:i};
+    }else{lastSpan.span++;}
+  });
+  if(lastSpan)monthSpans.push(lastSpan);
+
+  // Seasonal color helper
+  function seaColor(m){
+    const idx=state.seasonalData[m]?.index||1;
+    const r=Math.round(220*Math.min(1,(2-idx)));
+    const g=Math.round(185*Math.min(1,idx/1.5));
+    return `rgb(${r},${g},70)`;
+  }
+
+  // Build platform & lane row structure
+  const platforms=state.config.activePlatforms||Object.keys(state.platformBudgets);
+  const rows=[]; // {kind:'platform'|'lane', platform, lane?}
+  platforms.forEach(p=>{
+    const lanes=(state.platformBudgets[p]&&state.platformBudgets[p].lanes)||[];
+    if(lanes.length===0){
+      rows.push({kind:'single',platform:p,lane:''});
+    }else{
+      rows.push({kind:'platform-header',platform:p});
+      lanes.forEach(l=>rows.push({kind:'lane',platform:p,lane:l}));
+    }
+  });
+
+  // Build table HTML with explicit width + colgroup for stable column widths
+  const labelW=200;
+  const tableW=labelW+totalDays*cellW;
+  let h=`<table class="tl-table" id="tlGrid" style="width:${tableW}px;">`;
+  h+=`<colgroup><col style="width:${labelW}px;">`;
+  for(let i=0;i<totalDays;i++)h+=`<col style="width:${cellW}px;">`;
+  h+=`</colgroup><thead>`;
+
+  // Row 1: Month headers
+  h+=`<tr><th class="th-label">Platforma / Kampaň</th>`;
+  monthSpans.forEach(ms=>{
+    const span=ms.span;
+    const label=totalDays<=92?MONTHS[ms.m]:ABBR[ms.m];
+    h+=`<th class="th-month" colspan="${span}" style="border-top:3px solid ${seaColor(ms.m)};min-width:${span*cellW}px;"><span title="${MONTHS[ms.m]} · sezónní index ${state.seasonalData[ms.m]?.index||1}">${label}</span></th>`;
+  });
+  h+=`</tr>`;
+
+  // Row 2: Day number headers
+  h+=`<tr><th class="th-label" style="font-size:.58rem;">Den →</th>`;
+  days.forEach((d,i)=>{
+    const isCur=d.iso===todayISO;
+    const isWk=d.dow===0||d.dow===6;
+    const monBdy=(i<days.length-1)&&days[i+1].m!==d.m;
+    const cls=`th-day${isCur?' cur-day':''}${isWk?' wknd':''}${monBdy?' mon-bdy':''}`;
+    const dayTxt=totalDays<=92?d.day:(d.day===1||d.day===15?d.day:'');
+    h+=`<th class="${cls}" style="width:${cellW}px;min-width:${cellW}px;" title="${d.date.toLocaleDateString('cs-CZ',{weekday:'short',day:'numeric',month:'numeric'})}">${dayTxt}</th>`;
+  });
+  h+=`</tr></thead><tbody>`;
+
+  // Seasonal row
+  h+=`<tr class="season-row"><td class="td-label" style="font-size:.58rem;color:var(--fm-mute);">SEZÓNA</td>`;
+  days.forEach((d,i)=>{
+    const monBdy=(i<days.length-1)&&days[i+1].m!==d.m;
+    h+=`<td class="${monBdy?'mon-bdy':''}" style="background:${seaColor(d.m)};opacity:.55;width:${cellW}px;"></td>`;
+  });
+  h+=`</tr>`;
+
+  // Generate rows
+  rows.forEach(row=>{
+    const platform=row.platform;
+    const lane=row.lane||'';
+    const lanes=(state.platformBudgets[platform]&&state.platformBudgets[platform].lanes)||[];
+
+    // Platform header row (when platform has lanes)
+    if(row.kind==='platform-header'){
+      h+=`<tr class="platform-row"><td class="td-label"><span class="tl-row-name"><span style="width:9px;height:9px;border-radius:2px;background:${platColor(platform)};display:inline-block;"></span>${esc(platform)}</span><button class="tl-add-btn" title="Přidat kampaň do ${esc(platform)}" onclick="quickAddCampaign('${esc(platform)}','')">+</button></td>`;
+      days.forEach((d,i)=>{
+        const monBdy=(i<days.length-1)&&days[i+1].m!==d.m;
+        h+=`<td class="${monBdy?'mon-bdy':''}" style="width:${cellW}px;background:#f5f5f5;border-bottom:1px solid var(--fm-line);"></td>`;
+      });
+      h+=`</tr>`;
+      return;
+    }
+
+    // Filter campaigns for this row
+    const camps=state.campaigns.filter(c=>{
+      if(c.platform!==platform)return false;
+      if(lanes.length>0){
+        // Lane row — match lane (default to first lane if campaign has no lane set)
+        const cLane=c.lane||lanes[0];
+        if(cLane!==lane)return false;
+      }
+      if(statusFilter&&c.status!==statusFilter)return false;
+      if(!c.startDate||!c.endDate)return false;
+      return true;
+    });
+
+    const rowCls=row.kind==='lane'?'lane-row':'';
+    const labelCls=row.kind==='lane'?'td-label lane-label':'td-label';
+    const labelInner=row.kind==='lane'
+      ? `<span class="tl-row-name"><span style="width:6px;height:6px;border-radius:1px;background:${platColor(platform)};opacity:.6;display:inline-block;"></span>${esc(lane)}</span><button class="tl-add-btn" title="Přidat do ${esc(platform)} / ${esc(lane)}" onclick="quickAddCampaign('${esc(platform)}','${esc(lane)}')">+</button>`
+      : `<span class="tl-row-name"><span style="width:9px;height:9px;border-radius:2px;background:${platColor(platform)};display:inline-block;"></span>${esc(platform)}</span><button class="tl-add-btn" title="Přidat kampaň do ${esc(platform)}" onclick="quickAddCampaign('${esc(platform)}','')">+</button>`;
+
+    h+=`<tr class="${rowCls}"><td class="${labelCls}">${labelInner}</td>`;
+
+    days.forEach((d,i)=>{
+      const monBdy=(i<days.length-1)&&days[i+1].m!==d.m;
+      const isWk=d.dow===0||d.dow===6;
+      const isCur=d.iso===todayISO;
+      // Find campaign active this day
+      const camp=camps.find(c=>{
+        const cs=ymdParse(c.startDate);
+        const ce=ymdParse(c.endDate);
+        return cs<=d.date&&ce>=d.date;
+      });
+      if(camp){
+        const color=camp.color||statusColor(camp.status)||platColor(platform);
+        const cs=ymdParse(camp.startDate);
+        const ce=ymdParse(camp.endDate);
+        const beforeView=cs<dFrom;
+        const afterView=ce>dTo;
+        const isStart=beforeView?(i===0):(camp.startDate===d.iso);
+        const isEnd=afterView?(i===days.length-1):(camp.endDate===d.iso);
+        const cls=`wc wc-filled${isStart?' wc-start':''}${isEnd?' wc-end':''}${monBdy?' mon-bdy':''}`;
+        const label=isStart?`<span class="tl-camp-label">${esc(camp.name)}</span>`:'';
+        const ttDate=`${fmtDateShort(camp.startDate)} – ${fmtDateShort(camp.endDate)}`;
+        h+=`<td class="${cls}" style="background:${color};width:${cellW}px;"
+          onclick="openCampaignModal('${camp.id}')"
+          onmouseenter="showTooltip(event,this)"
+          onmouseleave="hideTooltip()"
+          data-tip="${esc(camp.name)}|${ttDate}|${statusLabel(camp.status)}|${fmtKc(camp.budgetTotal)}"
+          >${label}</td>`;
+      }else{
+        const cls=`wc wc-empty${isWk?' wknd':''}${monBdy?' mon-bdy':''}${isCur?' cur-day':''}`;
+        h+=`<td class="${cls}" style="width:${cellW}px;"
+          data-iso="${d.iso}" data-platform="${esc(platform)}" data-lane="${esc(lane)}"
+          onmousedown="startGridDrag(event)"
+          title="${d.date.toLocaleDateString('cs-CZ',{weekday:'long',day:'numeric',month:'long'})}"></td>`;
+      }
+    });
+
+    h+=`</tr>`;
+  });
+
+  h+=`</tbody></table>`;
+  document.getElementById('calWrap').innerHTML=h;
+}
+
+function quickAddCampaign(platform,lane){
+  document.getElementById('campPlatform').value=platform;
+  openCampaignModal(null,true);
+  // Pre-fill lane after modal opens (modal init reads platform lanes)
+  setTimeout(()=>{
+    const laneSel=document.getElementById('campLane');
+    if(laneSel&&lane){laneSel.value=lane;}
+  },10);
+}
+
+// Grid drag-create on daily cells
+let _drag=null;
+function startGridDrag(e){
+  if(e.button!==0)return;
+  e.preventDefault();
+  const cell=e.currentTarget;
+  const platform=cell.dataset.platform;
+  const lane=cell.dataset.lane||'';
+  const startISO=cell.dataset.iso;
+  _drag={platform,lane,startISO,endISO:startISO};
+  cell.classList.add('wc-drag');
+
+  function onMove(ev){
+    const el=document.elementFromPoint(ev.clientX,ev.clientY);
+    const tc=el&&el.closest?el.closest('td.wc-empty'):null;
+    if(!tc)return;
+    if(tc.dataset.platform!==platform||(tc.dataset.lane||'')!==lane)return;
+    const iso=tc.dataset.iso;
+    _drag.endISO=iso;
+    const a=_drag.startISO,b=_drag.endISO;
+    const lo=a<b?a:b,hi=a<b?b:a;
+    document.querySelectorAll(`td.wc-empty[data-platform="${platform}"]`).forEach(c=>{
+      if((c.dataset.lane||'')!==lane){c.classList.remove('wc-drag');return;}
+      const ci=c.dataset.iso;
+      c.classList.toggle('wc-drag',ci>=lo&&ci<=hi);
+    });
+  }
+  function onUp(){
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    document.querySelectorAll('.wc-drag').forEach(c=>c.classList.remove('wc-drag'));
+    if(!_drag)return;
+    const a=_drag.startISO,b=_drag.endISO;
+    const lo=a<b?a:b,hi=a<b?b:a;
+    document.getElementById('campPlatform').value=platform;
+    document.getElementById('campStart').value=lo;
+    document.getElementById('campEnd').value=hi;
+    openCampaignModal(null,true);
+    setTimeout(()=>{
+      const laneSel=document.getElementById('campLane');
+      if(laneSel&&lane){laneSel.value=lane;}
+    },10);
+    _drag=null;
+  }
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
+function showTooltip(e,cell){
+  const tt=document.getElementById('tlTooltip');
+  const parts=(cell.dataset.tip||'').split('|');
+  tt.innerHTML=`<strong>${parts[0]||''}</strong><br><span style="opacity:.8">${parts[1]||''}</span><br><span style="opacity:.65">${parts[2]||''} · ${parts[3]||''}</span>`;
+  tt.style.display='block';
+  tt.style.left=(e.clientX+14)+'px';
+  tt.style.top=(e.clientY-8)+'px';
+}
+function hideTooltip(){document.getElementById('tlTooltip').style.display='none';}
+
+// ─── SEASONAL TAB ────────────────────────────────────────────────────────────
+function renderSeasonal(){
+  const sd=state.seasonalData;
+  if(charts.seasonal)charts.seasonal.destroy();
+  const ctx=document.getElementById('chartSeasonal').getContext('2d');
+  charts.seasonal=new Chart(ctx,{type:'bar',data:{
+    labels:sd.map(s=>s.label),
+    datasets:[{
+      label:'Sezónní index',
+      data:sd.map(s=>s.index),
+      backgroundColor:sd.map(s=>s.index>=1.3?'rgba(220,38,38,.75)':s.index>=1.0?'rgba(234,179,8,.75)':'rgba(156,163,175,.75)'),
+      borderRadius:4,
+    }]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},annotation:{annotations:{line1:{type:'line',yMin:1,yMax:1,borderColor:'rgba(0,0,0,.3)',borderDash:[4,3]}}}},scales:{x:{grid:{display:false}},y:{min:0,max:2,grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>v.toFixed(1)}}}}});
+
+  // Editor
+  const ed=document.getElementById('seasonalEditor');
+  ed.innerHTML=sd.map((s,i)=>`
+    <div class="card p-3">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-sm font-semibold">${s.label}</span>
+        <span class="text-xs" style="color:var(--fm-mute);">${s.index>=1.3?'🔥 Vrchol':s.index>=1.0?'↗ Nadprůměr':'↘ Podprůměr'}</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <input type="number" class="season-input" value="${s.index}" min="0" max="3" step="0.05"
+          onchange="updateSeasonalIndex(${i},this.value)" style="width:70px;">
+        <div class="flex-1" style="height:6px;border-radius:3px;background:linear-gradient(90deg,${s.index>=1.3?'rgba(220,38,38,.7)':s.index>=1.0?'rgba(234,179,8,.7)':'rgba(156,163,175,.5)'},transparent);"></div>
+      </div>
+      <div class="text-xs mt-1" style="color:var(--fm-mute);">${s.notes||''}</div>
+    </div>`).join('');
+
+  renderBudgetCalc();
+  renderHolidays();
+}
+
+function updateSeasonalIndex(i,val){
+  state.seasonalData[i].index=Math.max(0,Math.min(3,parseFloat(val)||0));
+  saveState();
+  renderSeasonal();
+}
+function resetSeasonalData(){
+  if(!confirm('Obnovit výchozí sezónní indexy?'))return;
+  state.seasonalData=JSON.parse(JSON.stringify(DEFAULT_SEASONAL));
+  saveState();
+  renderSeasonal();
+}
+
+function renderBudgetCalc(){
+  const annual=parseFloat(document.getElementById('budgetCalcAnnual').value)||300000;
+  const sd=state.seasonalData;
+  const total=sd.reduce((a,s)=>a+s.index,0);
+  const el=document.getElementById('budgetCalcResult');
+  el.innerHTML='<div class="text-xs font-semibold mb-1" style="color:var(--fm-mute);">Doporučené měsíční budgety</div>'+
+    sd.map(s=>{
+      const rec=Math.round(annual*(s.index/total));
+      return `<div class="flex items-center justify-between text-sm">
+        <span style="width:48px;color:var(--fm-mute);">${s.abbr}</span>
+        <div class="flex-1 mx-2" style="height:4px;border-radius:2px;background:rgba(220,38,38,${(s.index/2).toFixed(2)});"></div>
+        <span class="mono text-xs font-semibold">${rec.toLocaleString('cs-CZ')} Kč</span>
+      </div>`;
+    }).join('');
+}
+
+function renderHolidays(){
+  const el=document.getElementById('czechHolidays');
+  el.innerHTML=CZECH_HOLIDAYS.map(h=>`<span class="chip">${h.date.slice(0,2)}.${h.date.slice(3,5)}. ${h.name}</span>`).join('');
+}
+
+// ─── PERFORMANCE TAB ─────────────────────────────────────────────────────────
+function switchPerfTab(p){
+  perfTab=p;
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.toggle('active',t.dataset.ptab===p));
+  renderPerformance();
+}
+
+function renderPerformance(){
+  const monthly=state.performanceData.monthly||[];
+  const platforms=perfTab==='all'?Object.keys(state.platformBudgets):[perfTab];
+
+  // KPIs from monthly data
+  const totSpend=monthly.filter(r=>platforms.includes(r.platforma)).reduce((a,r)=>a+r.spend,0);
+  const totConv=dailyData.filter(r=>platforms.some(p=>sourceToPlat(r.source)===p)).reduce((a,r)=>a+(r.conversions||0),0);
+  const totClicks=dailyData.filter(r=>platforms.some(p=>sourceToPlat(r.source)===p)).reduce((a,r)=>a+(r.clicks||0),0);
+  const totImpr=dailyData.filter(r=>platforms.some(p=>sourceToPlat(r.source)===p)).reduce((a,r)=>a+(r.impressions||0),0);
+  const ctr=totImpr>0?(totClicks/totImpr*100):0;
+  const cpc=totClicks>0?(totSpend/totClicks):0;
+  const cpa=totConv>0?(totSpend/totConv):0;
+
+  document.getElementById('perfKpis').innerHTML=`
+    <div class="kpi-tile"><div class="kpi-label">Spend celkem</div><div class="kpi-val num">${fmtKc(totSpend)}</div><div class="kpi-sub">z data.json</div></div>
+    <div class="kpi-tile"><div class="kpi-label">Kliky</div><div class="kpi-val num">${fmtNum(totClicks)}</div><div class="kpi-sub">${ctr>0?'CTR '+fmtPct(ctr):'Importujte CSV'}</div></div>
+    <div class="kpi-tile"><div class="kpi-label">Konverze</div><div class="kpi-val num">${fmtNum(totConv)}</div><div class="kpi-sub">${cpa>0?'CPA '+fmtKc(cpa):'Importujte CSV'}</div></div>
+    <div class="kpi-tile" style="border-color:var(--fm-red);background:var(--fm-red-bg);"><div class="kpi-label" style="color:var(--fm-red);">CPC</div><div class="kpi-val num kpi-accent">${cpc>0?fmtKc(cpc):'—'}</div><div class="kpi-sub">průměrná cena kliku</div></div>`;
+
+  // Spend chart by month
+  const allMonths=[...new Set(monthly.map(r=>r.obdobi))].sort();
+  const last6=allMonths.slice(-6);
+  const spendDs=platforms.map(p=>({
+    label:p,
+    data:last6.map(m=>monthly.filter(r=>r.platforma===p&&r.obdobi===m).reduce((a,r)=>a+r.spend,0)),
+    backgroundColor:platColor(p),borderRadius:2,
+  }));
+  if(charts.perfSpend)charts.perfSpend.destroy();
+  const ctx1=document.getElementById('chartPerfSpend').getContext('2d');
+  charts.perfSpend=new Chart(ctx1,{type:'bar',data:{labels:last6.map(m=>{const[y,mo]=m.split('-');return['','Led','Úno','Bře','Dub','Kvě','Čer','Čec','Srp','Zář','Říj','Lis','Pro'][parseInt(mo)];}),datasets:spendDs},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()}}}}});
+
+  // Conversions chart
+  let convData=[];
+  if(dailyData.length>0){
+    const byMonth={};
+    dailyData.forEach(r=>{
+      const m=r.date.slice(0,7);if(!byMonth[m])byMonth[m]={conv:0,clicks:0};
+      byMonth[m].conv+=(r.conversions||0);byMonth[m].clicks+=(r.clicks||0);
+    });
+    const months=Object.keys(byMonth).sort().slice(-6);
+    convData=months.map(m=>({m,conv:byMonth[m].conv,ctr:byMonth[m].clicks>0?byMonth[m].conv/byMonth[m].clicks*100:0}));
+  }
+  if(charts.perfConv)charts.perfConv.destroy();
+  const ctx2=document.getElementById('chartPerfConv').getContext('2d');
+  if(convData.length>0){
+    charts.perfConv=new Chart(ctx2,{type:'bar',data:{labels:convData.map(d=>d.m.slice(5)),datasets:[{label:'Konverze',data:convData.map(d=>d.conv),backgroundColor:'rgba(220,38,38,.7)',borderRadius:3,yAxisID:'y'},{label:'CTR %',data:convData.map(d=>d.ctr),type:'line',borderColor:'#4285F4',backgroundColor:'rgba(66,133,244,.1)',fill:true,tension:.3,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,.05)'}},y1:{position:'right',grid:{display:false},ticks:{callback:v=>v.toFixed(1)+'%'}}}}});
+  } else {
+    charts.perfConv=new Chart(ctx2,{type:'bar',data:{labels:[],datasets:[]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{},y:{}}}});
+    ctx2.canvas.parentNode.querySelector('h3')?.after(Object.assign(document.createElement('p'),{textContent:'Importujte CSV pro zobrazení',style:'color:var(--fm-mute);font-size:.8rem;'}));
+  }
+
+  // Campaign table from daily data
+  if(dailyData.length>0){
+    const byCamp={};
+    dailyData.forEach(r=>{
+      const k=r.campaign_name||'(neznámá)';
+      if(!byCamp[k])byCamp[k]={name:k,spend:0,clicks:0,impressions:0,conversions:0,value:0};
+      byCamp[k].spend+=(r.cost||0);byCamp[k].clicks+=(r.clicks||0);
+      byCamp[k].impressions+=(r.impressions||0);byCamp[k].conversions+=(r.conversions||0);
+      byCamp[k].value+=(r.conversions_value||0);
+    });
+    const rows=Object.values(byCamp).sort((a,b)=>b.spend-a.spend);
+    document.getElementById('perfCampsBody').innerHTML=rows.map(r=>{
+      const ctr=r.impressions>0?(r.clicks/r.impressions*100).toFixed(2)+'%':'—';
+      const cpc=r.clicks>0?fmtKc(r.spend/r.clicks):'—';
+      const cpa=r.conversions>0?fmtKc(r.spend/r.conversions):'—';
+      return `<tr><td>${esc(r.name)}</td><td class="r mono">${fmtKc(r.spend)}</td><td class="r">${fmtNum(r.clicks)}</td><td class="r">${ctr}</td><td class="r">${cpc}</td><td class="r">${fmtNum(r.conversions)}</td><td class="r">${cpa}</td></tr>`;
+    }).join('');
+  }
+
+  document.getElementById('perfDataSource').textContent=dailyData.length>0?`CSV — ${dailyData.length} řádků`:'data.json';
+}
+
+function sourceToPlat(source){
+  const m={'google':'Google Ads','seznam':'Sklik','facebook':'Meta','heureka.cz':'Heureka'};
+  return m[source]||source;
+}
+
+// ─── CSV IMPORT ───────────────────────────────────────────────────────────────
+function handleCsvImport(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.split('\n').filter(l=>l.trim());
+    if(lines.length<2){alert('CSV je prázdné nebo neplatné.');return;}
+    const headers=lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/"/g,''));
+    const idx={};
+    ['web','date','source','medium','cost','clicks','impressions','campaign_name','campaign_id','conversions','conversions_value'].forEach(k=>{idx[k]=headers.indexOf(k);});
+    dailyData=[];
+    for(let i=1;i<lines.length;i++){
+      const cols=lines[i].split(',').map(c=>c.trim().replace(/"/g,''));
+      if(cols.length<3)continue;
+      const row={};
+      Object.keys(idx).forEach(k=>{if(idx[k]>=0)row[k]=cols[idx[k]];});
+      row.cost=parseFloat(row.cost)||0;
+      row.clicks=parseInt(row.clicks)||0;
+      row.impressions=parseInt(row.impressions)||0;
+      row.conversions=parseFloat(row.conversions)||0;
+      row.conversions_value=parseFloat(row.conversions_value)||0;
+      if(row.medium&&row.medium!=='cpc'&&row.medium!=='referral'){}
+      if(row.date&&row.cost>=0)dailyData.push(row);
+    }
+    event.target.value='';
+    renderPerformance();
+    alert(`Importováno ${dailyData.length} řádků z CSV.`);
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+// ─── CAMPAIGNS TAB ────────────────────────────────────────────────────────────
+function renderCampaignsTab(){
+  const search=(document.getElementById('campSearch')?.value||'').toLowerCase();
+  const platF=document.getElementById('campFilterPlatform')?.value||'';
+  const statF=document.getElementById('campFilterStatus')?.value||'';
+
+  // Populate platform filter
+  const pf=document.getElementById('campFilterPlatform');
+  const curPlatF=pf.value;
+  pf.innerHTML='<option value="">Všechny platformy</option>'+Object.keys(state.platformBudgets).map(p=>`<option value="${esc(p)}"${p===curPlatF?' selected':''}>${esc(p)}</option>`).join('');
+
+  let camps=[...state.campaigns];
+  if(search)camps=camps.filter(c=>c.name.toLowerCase().includes(search)||(c.notes||'').toLowerCase().includes(search));
+  if(platF)camps=camps.filter(c=>c.platform===platF);
+  if(statF)camps=camps.filter(c=>c.status===statF);
+  camps.sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
+
+  const tbody=document.getElementById('campsBody');
+  if(camps.length===0){
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--fm-mute);">Žádné kampaně${search||platF||statF?' (vyčistěte filtry)':' — přidejte první kampaň'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=camps.map(c=>`<tr>
+    <td><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${c.color||STATUS_COLORS[c.status]||platColor(c.platform)};margin-right:.5rem;vertical-align:middle;"></span><strong>${esc(c.name)}</strong>${c.notes?`<br><span style="font-size:.75rem;color:var(--fm-mute);">${esc(c.notes.slice(0,60))}…</span>`:''}</td>
+    <td><span class="platform-dot" style="background:${platColor(c.platform)};"></span>${esc(c.platform)}</td>
+    <td>${TYPE_LABELS[c.type]||c.type}</td>
+    <td>${campStatusBadge(c.status)}</td>
+    <td>${fmtDateShort(c.startDate)}</td>
+    <td>${fmtDateShort(c.endDate)}</td>
+    <td class="r mono">${c.budgetTotal?fmtKc(c.budgetTotal):'—'}</td>
+    <td class="r mono">${c.spend?fmtKc(c.spend):'—'}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="openCampaignModal('${c.id}')">Upravit</button></td>
+  </tr>`).join('');
+}
+
+// ─── SETTINGS TAB ────────────────────────────────────────────────────────────
+function renderSettings(){
+  const cfg=state.config;
+  document.getElementById('clientConfigForm').innerHTML=`
+    <div class="form-group"><label class="fl">Název klienta</label><input type="text" value="${esc(cfg.klient||'')}" onchange="updateConfig('klient',this.value)"></div>
+    <div class="form-group"><label class="fl">Account manager</label><input type="text" value="${esc(cfg.manazer||'')}" onchange="updateConfig('manazer',this.value)"></div>
+    <div class="form-group"><label class="fl">Email manažera</label><input type="email" value="${esc(cfg.manazerEmail||'')}" onchange="updateConfig('manazerEmail',this.value)"></div>
+    <div class="form-group"><label class="fl">URL data.json (synchronizace)</label><input type="url" value="${esc(cfg.dataJsonUrl||'')}" placeholder="https://..." onchange="updateConfig('dataJsonUrl',this.value)"></div>
+    <button class="btn btn-ghost btn-sm" onclick="loadDataJson()">↻ Načíst data nyní</button>`;
+
+  renderPlatformConfig();
+  renderTypesEditor();
+  renderStatusesEditor();
+
+  document.getElementById('clientsListSettings').innerHTML=clients.map(c=>`
+    <div class="flex items-center gap-2">
+      <span class="flex-1 text-sm${c.id===activeClientId?' font-semibold':''}">${esc(c.name)}</span>
+      ${c.id===activeClientId?'<span class="pill" style="background:var(--fm-grey-10);color:var(--fm-mute);">aktivní</span>':''}
+      <button class="btn btn-ghost btn-sm" onclick="renameClient('${c.id}')">Přejmenovat</button>
+      ${clients.length>1&&c.id!==activeClientId?`<button class="btn btn-ghost btn-sm" style="color:var(--fm-red);" onclick="removeClient('${c.id}')">Smazat</button>`:''}
+    </div>`).join('');
+}
+
+function renderPlatformConfig(){
+  const el=document.getElementById('platformConfigForm');
+  el.innerHTML=Object.entries(state.platformBudgets).map(([p,v])=>{
+    const lanes=v.lanes||[];
+    return `
+    <div class="card p-3" style="border-left:3px solid ${v.color};">
+      <div class="flex items-center gap-2 flex-wrap mb-2">
+        <input type="color" value="${v.color}" style="width:36px;height:32px;padding:2px;cursor:pointer;" onchange="updatePlatformColor('${esc(p)}',this.value)">
+        <input type="text" value="${esc(p)}" style="flex:1;min-width:140px;font-weight:600;" onchange="renamePlatform('${esc(p)}',this.value)">
+        <input type="number" value="${v.monthly||0}" style="width:110px;" onchange="updateBudget('${esc(p)}',this.value)" placeholder="0"> <span class="text-xs" style="color:var(--fm-mute);">Kč/měs</span>
+        <button class="btn btn-ghost btn-sm" style="color:var(--fm-red);" onclick="removePlatform('${esc(p)}')">× Smazat platformu</button>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs" style="color:var(--fm-mute);width:90px;">Sub-úrovně:</span>
+        ${lanes.map((l,i)=>`
+          <span class="pill" style="background:var(--fm-grey-10);gap:.3rem;padding:.15rem .55rem;">
+            <input type="text" value="${esc(l)}" style="border:none;background:transparent;width:${Math.max(8,l.length)*7}px;padding:0;font-size:.72rem;font-weight:600;" onchange="renameLane('${esc(p)}',${i},this.value)">
+            <button onclick="removeLane('${esc(p)}',${i})" style="background:none;border:none;color:var(--fm-red);cursor:pointer;font-size:.85rem;line-height:1;padding:0 0 0 .15rem;">×</button>
+          </span>`).join('')}
+        <button class="btn btn-ghost btn-sm" style="padding:.15rem .55rem;font-size:.72rem;" onclick="addLane('${esc(p)}')">+ Sub-úroveň</button>
+      </div>
+    </div>`;}).join('');
+}
+
+function renderTypesEditor(){
+  const el=document.getElementById('typesEditor');
+  el.innerHTML=getTypes().map((t,i)=>`
+    <div class="flex items-center gap-2">
+      <input type="text" value="${esc(t.key)}" style="width:120px;font-family:'JetBrains Mono',monospace;font-size:.78rem;" onchange="updateTypeKey(${i},this.value)" title="Interní klíč">
+      <input type="text" value="${esc(t.label)}" style="flex:1;" onchange="updateTypeLabel(${i},this.value)" placeholder="Zobrazovaný název">
+      <button class="btn btn-ghost btn-sm" style="color:var(--fm-red);" onclick="removeType(${i})">×</button>
+    </div>`).join('');
+}
+
+function renderStatusesEditor(){
+  const el=document.getElementById('statusesEditor');
+  el.innerHTML=getStatuses().map((s,i)=>`
+    <div class="flex items-center gap-2">
+      <input type="color" value="${s.color}" style="width:32px;height:32px;padding:2px;cursor:pointer;" onchange="updateStatusColor(${i},this.value)">
+      <input type="text" value="${esc(s.key)}" style="width:110px;font-family:'JetBrains Mono',monospace;font-size:.78rem;" onchange="updateStatusKey(${i},this.value)" title="Interní klíč">
+      <input type="text" value="${esc(s.label)}" style="flex:1;" onchange="updateStatusLabel(${i},this.value)" placeholder="Zobrazovaný název">
+      <button class="btn btn-ghost btn-sm" style="color:var(--fm-red);" onclick="removeStatus(${i})">×</button>
+    </div>`).join('');
+}
+
+function updateConfig(key,val){state.config[key]=val;saveState();}
+function updateBudget(p,val){if(state.platformBudgets[p])state.platformBudgets[p].monthly=parseFloat(val)||0;saveState();}
+
+// ── Platform editor ─────────────────────────────────────────────────────────
+function updatePlatformColor(p,c){if(state.platformBudgets[p]){state.platformBudgets[p].color=c;saveState();renderPlatformConfig();}}
+function renamePlatform(oldName,newName){
+  newName=newName.trim();if(!newName||newName===oldName)return;
+  if(state.platformBudgets[newName]){alert('Platforma "'+newName+'" již existuje.');renderPlatformConfig();return;}
+  state.platformBudgets[newName]=state.platformBudgets[oldName];delete state.platformBudgets[oldName];
+  state.config.activePlatforms=(state.config.activePlatforms||[]).map(p=>p===oldName?newName:p);
+  state.campaigns.forEach(c=>{if(c.platform===oldName)c.platform=newName;});
+  saveState();renderSettings();
+}
+function addPlatform(){
+  const name=prompt('Název nové platformy:');if(!name)return;
+  if(state.platformBudgets[name]){alert('Platforma již existuje.');return;}
+  state.platformBudgets[name]={monthly:0,color:'#888888',lanes:[]};
+  state.config.activePlatforms=(state.config.activePlatforms||[]).concat([name]);
+  saveState();renderSettings();
+}
+function removePlatform(p){
+  const used=state.campaigns.filter(c=>c.platform===p).length;
+  if(!confirm(`Smazat platformu "${p}"?${used?` (${used} kampaní bude bez platformy)`:''}`))return;
+  delete state.platformBudgets[p];
+  state.config.activePlatforms=(state.config.activePlatforms||[]).filter(x=>x!==p);
+  saveState();renderSettings();
+}
+function addLane(p){
+  const name=prompt('Název sub-úrovně:');if(!name)return;
+  if(!state.platformBudgets[p].lanes)state.platformBudgets[p].lanes=[];
+  if(state.platformBudgets[p].lanes.includes(name)){alert('Tato úroveň již existuje.');return;}
+  state.platformBudgets[p].lanes.push(name);
+  saveState();renderPlatformConfig();
+}
+function renameLane(p,i,newName){
+  newName=newName.trim();if(!newName)return;
+  const old=state.platformBudgets[p].lanes[i];
+  state.platformBudgets[p].lanes[i]=newName;
+  state.campaigns.forEach(c=>{if(c.platform===p&&c.lane===old)c.lane=newName;});
+  saveState();
+}
+function removeLane(p,i){
+  const lane=state.platformBudgets[p].lanes[i];
+  const used=state.campaigns.filter(c=>c.platform===p&&c.lane===lane).length;
+  if(!confirm(`Smazat úroveň "${lane}"?${used?` (${used} kampaní bude přesunuto do první zbývající úrovně)`:''}`))return;
+  state.platformBudgets[p].lanes.splice(i,1);
+  const fallback=state.platformBudgets[p].lanes[0]||'';
+  state.campaigns.forEach(c=>{if(c.platform===p&&c.lane===lane)c.lane=fallback;});
+  saveState();renderPlatformConfig();
+}
+
+// ── Types editor ────────────────────────────────────────────────────────────
+function updateTypeKey(i,v){v=v.trim();if(!v)return;const old=state.taxonomy.types[i].key;state.taxonomy.types[i].key=v;state.campaigns.forEach(c=>{if(c.type===old)c.type=v;});saveState();refreshTaxonomyCache();}
+function updateTypeLabel(i,v){state.taxonomy.types[i].label=v;saveState();refreshTaxonomyCache();}
+function addTypeRow(){state.taxonomy.types.push({key:'novy_'+Date.now().toString(36).slice(-4),label:'Nový typ'});saveState();refreshTaxonomyCache();renderTypesEditor();}
+function removeType(i){
+  const t=state.taxonomy.types[i];
+  const used=state.campaigns.filter(c=>c.type===t.key).length;
+  if(!confirm(`Smazat typ "${t.label}"?${used?` (${used} kampaní bude bez typu)`:''}`))return;
+  state.taxonomy.types.splice(i,1);saveState();refreshTaxonomyCache();renderTypesEditor();
+}
+
+// ── Statuses editor ─────────────────────────────────────────────────────────
+function updateStatusKey(i,v){v=v.trim();if(!v)return;const old=state.taxonomy.statuses[i].key;state.taxonomy.statuses[i].key=v;state.campaigns.forEach(c=>{if(c.status===old)c.status=v;});saveState();refreshTaxonomyCache();}
+function updateStatusLabel(i,v){state.taxonomy.statuses[i].label=v;saveState();refreshTaxonomyCache();}
+function updateStatusColor(i,v){state.taxonomy.statuses[i].color=v;saveState();refreshTaxonomyCache();}
+function addStatusRow(){state.taxonomy.statuses.push({key:'novy_'+Date.now().toString(36).slice(-4),label:'Nový status',color:'#888888'});saveState();refreshTaxonomyCache();renderStatusesEditor();}
+function removeStatus(i){
+  const s=state.taxonomy.statuses[i];
+  const used=state.campaigns.filter(c=>c.status===s.key).length;
+  if(!confirm(`Smazat status "${s.label}"?${used?` (${used} kampaní bude bez statusu)`:''}`))return;
+  state.taxonomy.statuses.splice(i,1);saveState();refreshTaxonomyCache();renderStatusesEditor();
+}
+function renameClient(id){const c=clients.find(x=>x.id===id);if(!c)return;const n=prompt('Nový název:',c.name);if(!n)return;c.name=n;saveClients();if(id===activeClientId){state.config.klient=n;saveState();}renderClientSelector();renderSettings();}
+function removeClient(id){if(!confirm('Smazat klienta a všechna jeho data?'))return;clients=clients.filter(c=>c.id!==id);saveClients();localStorage.removeItem('fmp_data_'+id);renderClientSelector();renderSettings();}
+
+function exportClientData(){
+  const data=JSON.stringify(state,null,2);
+  const a=document.createElement('a');
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(data);
+  a.download=`fmp_${(state.config.klient||'klient').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importClientData(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{
+    const data=JSON.parse(e.target.result);
+    if(confirm(`Importovat data klienta "${data.config?.klient||'?'}"? Přepíše stávající data.`)){
+      state=data;saveState();renderAll();
+    }
+  }catch(err){alert('Neplatný JSON soubor.');}};
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+function clearClientData(){
+  state=makeDefaultState(state.config?.klient||'Klient');
+  saveState();dailyData=[];renderAll();
+}
+
+// ─── CAMPAIGN MODAL ───────────────────────────────────────────────────────────
+function refreshCampLaneOptions(){
+  const plat=document.getElementById('campPlatform').value;
+  const lanes=(state.platformBudgets[plat]&&state.platformBudgets[plat].lanes)||[];
+  const sel=document.getElementById('campLane');
+  const wrap=document.getElementById('campLaneWrap');
+  if(lanes.length===0){
+    sel.innerHTML='<option value="">— platforma nemá úrovně —</option>';
+    wrap.style.opacity='.55';
+    sel.disabled=true;
+  }else{
+    sel.innerHTML=lanes.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');
+    wrap.style.opacity='1';
+    sel.disabled=false;
+  }
+}
+
+function openCampaignModal(id,preFilled){
+  const modal=document.getElementById('campaignModal');
+  refreshTaxonomyCache();
+  const plats=state.config.activePlatforms||Object.keys(state.platformBudgets);
+  document.getElementById('campPlatform').innerHTML=plats.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  document.getElementById('campType').innerHTML=getTypes().map(t=>`<option value="${esc(t.key)}">${esc(t.label)}</option>`).join('');
+  document.getElementById('campStatus').innerHTML=getStatuses().map(s=>`<option value="${esc(s.key)}">${esc(s.label)}</option>`).join('');
+
+  if(id){
+    const c=state.campaigns.find(x=>x.id===id);if(!c)return;
+    document.getElementById('campModalTitle').textContent='Upravit kampaň';
+    document.getElementById('campId').value=id;
+    document.getElementById('campName').value=c.name||'';
+    document.getElementById('campPlatform').value=c.platform||plats[0];
+    refreshCampLaneOptions();
+    if(c.lane)document.getElementById('campLane').value=c.lane;
+    document.getElementById('campType').value=c.type||(getTypes()[0]&&getTypes()[0].key)||'performance';
+    document.getElementById('campStatus').value=c.status||(getStatuses()[0]&&getStatuses()[0].key)||'planned';
+    document.getElementById('campStart').value=c.startDate||'';
+    document.getElementById('campEnd').value=c.endDate||'';
+    document.getElementById('campBudget').value=c.budgetTotal||'';
+    document.getElementById('campColor').value=c.color||'#f97316';
+    document.getElementById('campNotes').value=c.notes||'';
+    document.getElementById('campDeleteBtn').style.display='';
+  } else if(!preFilled){
+    document.getElementById('campModalTitle').textContent='Nová kampaň';
+    document.getElementById('campId').value='';
+    document.getElementById('campName').value='';
+    document.getElementById('campPlatform').value=plats[0]||'';
+    refreshCampLaneOptions();
+    document.getElementById('campType').value=(getTypes()[0]&&getTypes()[0].key)||'performance';
+    document.getElementById('campStatus').value=(getStatuses()[0]&&getStatuses()[0].key)||'planned';
+    document.getElementById('campStart').value='';
+    document.getElementById('campEnd').value='';
+    document.getElementById('campBudget').value='';
+    document.getElementById('campColor').value='#f97316';
+    document.getElementById('campNotes').value='';
+    document.getElementById('campDeleteBtn').style.display='none';
+  } else {
+    document.getElementById('campModalTitle').textContent='Nová kampaň';
+    document.getElementById('campId').value='';
+    refreshCampLaneOptions();
+    document.getElementById('campDeleteBtn').style.display='none';
+  }
+  modal.classList.add('open');
+  document.getElementById('campName').focus();
+}
+
+function closeCampaignModal(){document.getElementById('campaignModal').classList.remove('open');}
+
+function saveCampaign(){
+  const name=document.getElementById('campName').value.trim();
+  if(!name){alert('Zadejte název kampaně.');return;}
+  const start=document.getElementById('campStart').value;
+  const end=document.getElementById('campEnd').value;
+  if(!start||!end){alert('Zadejte datum od a do.');return;}
+  if(new Date(end)<new Date(start)){alert('Datum do musí být po datu od.');return;}
+
+  const id=document.getElementById('campId').value||'cmp_'+Date.now();
+  const platform=document.getElementById('campPlatform').value;
+  const laneSel=document.getElementById('campLane');
+  const lane=(laneSel&&!laneSel.disabled)?laneSel.value:'';
+  const camp={
+    id,name,
+    platform,
+    lane,
+    type:document.getElementById('campType').value,
+    status:document.getElementById('campStatus').value,
+    startDate:start,endDate:end,
+    budgetTotal:parseFloat(document.getElementById('campBudget').value)||0,
+    color:document.getElementById('campColor').value||null,
+    notes:document.getElementById('campNotes').value.trim(),
+    showInCalendar:true,
+    spend:0,conversions:0,clicks:0,impressions:0,
+  };
+  const existing=state.campaigns.findIndex(c=>c.id===id);
+  if(existing>=0){const old=state.campaigns[existing];camp.spend=old.spend;camp.conversions=old.conversions;camp.clicks=old.clicks;camp.impressions=old.impressions;state.campaigns[existing]=camp;}
+  else{state.campaigns.push(camp);}
+  saveState();
+  closeCampaignModal();
+  if(activeTab==='calendar')renderCalendar();
+  else if(activeTab==='campaigns')renderCampaignsTab();
+  else if(activeTab==='overview')renderOverview();
+}
+
+function deleteCampaign(){
+  const id=document.getElementById('campId').value;if(!id)return;
+  if(!confirm('Smazat kampaň?'))return;
+  state.campaigns=state.campaigns.filter(c=>c.id!==id);
+  saveState();closeCampaignModal();
+  if(activeTab==='calendar')renderCalendar();
+  else if(activeTab==='campaigns')renderCampaignsTab();
+  else renderOverview();
+}
+
+// ─── DATA LOADING ─────────────────────────────────────────────────────────────
+async function loadDataJson(){
+  const url=state.config.dataJsonUrl||'./data.json';
+  try{
+    const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    state.performanceData.monthly=d.spends||[];
+    state.performanceData.lastSync=d.lastSync||new Date().toISOString();
+    saveState();
+    if(activeTab==='performance')renderPerformance();
+    else if(activeTab==='overview')renderOverview();
+  }catch(e){console.warn('data.json load failed:',e);}
+}
+
+// ─── TABLE SORT ──────────────────────────────────────────────────────────────
+const sortState={};
+function sortTable(tableId,colIdx){
+  const table=document.getElementById(tableId);if(!table)return;
+  const tbody=table.querySelector('tbody');
+  const rows=Array.from(tbody.querySelectorAll('tr'));
+  const key=tableId+'_'+colIdx;
+  sortState[key]=(sortState[key]==='asc')?'desc':'asc';
+  const dir=sortState[key]==='asc'?1:-1;
+  rows.sort((a,b)=>{
+    const ta=a.cells[colIdx]?.textContent.trim()||'';
+    const tb=b.cells[colIdx]?.textContent.trim()||'';
+    const na=parseFloat(ta.replace(/\s/g,'').replace('Kč','').replace(',','.'));
+    const nb=parseFloat(tb.replace(/\s/g,'').replace('Kč','').replace(',','.'));
+    if(!isNaN(na)&&!isNaN(nb))return(na-nb)*dir;
+    return ta.localeCompare(tb,'cs')*dir;
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+  table.querySelectorAll('thead th').forEach((th,i)=>{th.classList.remove('sort-asc','sort-desc');if(i===colIdx)th.classList.add(sortState[key]==='asc'?'sort-asc':'sort-desc');});
+}
+
+// ─── RENDER ALL ───────────────────────────────────────────────────────────────
+function renderAll(){
+  renderClientSelector();
+  if(activeTab==='overview')renderOverview();
+  else if(activeTab==='calendar')renderCalendar();
+  else if(activeTab==='seasonal')renderSeasonal();
+  else if(activeTab==='performance')renderPerformance();
+  else if(activeTab==='campaigns')renderCampaignsTab();
+  else if(activeTab==='settings')renderSettings();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  initClients();
+  refreshTaxonomyCache();
+  renderClientSelector();
+  loadDataJson().catch(()=>{});
+  renderOverview();
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(m=>{
+    m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+  });
+});
+</script>
+</body>
+</html>
