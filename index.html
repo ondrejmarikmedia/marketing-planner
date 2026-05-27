@@ -428,7 +428,7 @@ const DEFAULT_SEASONAL = [
   {month:12,label:'Prosinec',abbr:'Pro',index:0.75,notes:'Vánoce, minimum výstavby'},
 ];
 
-const FMP_VERSION = '4'; // bump to force-reset localStorage when data model changes
+const FMP_VERSION = '5'; // bump to force-reset localStorage when data model changes
 
 const DEFAULT_PLATFORMS = {
   'Google Ads':{monthly:11000,color:'#4285F4',lanes:[]},
@@ -512,6 +512,9 @@ function makeDefaultState(name) {
 function makeHardsmileState(){
   const s=makeDefaultState('Hardsmile');
   s.config.manazer='Filip';
+  s.config.dataJsonUrl='https://raw.githubusercontent.com/ondrejmarikmedia/marketing-planner/main/data.json';
+  s.config.b2mUrl='https://app.b2metrics.com/api/v1/webs/year?webID=195';
+  // Token záměrně NENÍ v defaultu — uživatel ho přidá v Nastavení (raději přes Apps Script proxy než direct fetch kvůli CORS)
   s.platformBudgets={
     'Meta':          {monthly:25000,color:'#1877F2',lanes:['Brand','Performance','Promo']},
     'Google Ads':    {monthly:18000,color:'#4285F4',lanes:['Search','Shopping','Remarketing']},
@@ -1528,33 +1531,43 @@ async function loadDataJson(){
 function normalizeB2mResponse(payload){
   const out=[];
   const tryPush=(row)=>{
+    if(!row||typeof row!=='object')return;
     let year,month;
-    if(row.year&&row.month){year=+row.year;month=+row.month;}
-    else if(row.date){const m=String(row.date).match(/^(\d{4})-(\d{1,2})/);if(m){year=+m[1];month=+m[2];}}
-    else if(row.period){const m=String(row.period).match(/^(\d{4})-(\d{1,2})/);if(m){year=+m[1];month=+m[2];}}
-    else return;
-    const revenue=+(row.revenue??row.turnover??row.obrat??row.amount??row.total??0);
-    const orders=+(row.orders??row.order_count??row.objednavky??row.count??0);
+    // Detect (year, month) — string "2024-05" OR explicit fields OR period/date
+    const monthStr=row.month||row.period||row.date;
+    if(typeof monthStr==='string'){
+      const m=monthStr.match(/^(\d{4})-(\d{1,2})/);
+      if(m){year=+m[1];month=+m[2];}
+    }
+    if((!year||!month)&&row.year&&row.month&&!isNaN(+row.month)&&+row.month>=1&&+row.month<=12){
+      year=+row.year;month=+row.month;
+    }
+    if(!year||!month)return;
+    // Revenue: numeric or string-numeric ("279010.28")
+    const rev=row.revenue??row.turnover??row.obrat??row.amount??row.total??0;
+    const ord=row.orders??row.order_count??row.objednavky??row.count??0;
+    const revenue=+String(rev).replace(',','.');
+    const orders=+String(ord).replace(',','.');
     if(year>0&&month>=1&&month<=12&&revenue>0){
       out.push({year,month,revenue:Math.round(revenue),orders:Math.round(orders)});
     }
   };
-  if(Array.isArray(payload)){payload.forEach(tryPush);}
-  else if(payload&&typeof payload==='object'){
-    if(Array.isArray(payload.months))payload.months.forEach(tryPush);
-    else if(Array.isArray(payload.data))payload.data.forEach(tryPush);
-    else if(Array.isArray(payload.result))payload.result.forEach(tryPush);
-    else if(payload.years&&typeof payload.years==='object'){
-      Object.entries(payload.years).forEach(([y,rows])=>{
-        if(Array.isArray(rows))rows.forEach(r=>tryPush({year:y,...r}));
+  const walkArrays=(node,depth)=>{
+    if(depth>4)return;
+    if(Array.isArray(node)){node.forEach(tryPush);return;}
+    if(node&&typeof node==='object'){
+      // prioritized keys: items, months, data, result, rows
+      ['items','months','data','result','rows'].forEach(k=>{
+        if(Array.isArray(node[k]))node[k].forEach(tryPush);
+        else if(node[k]&&typeof node[k]==='object')walkArrays(node[k],depth+1);
       });
-    } else {
-      // last resort: walk all values searching for arrays of objects with month+revenue-like field
-      Object.values(payload).forEach(v=>{
-        if(Array.isArray(v))v.forEach(tryPush);
-      });
+      // fallback: scan all object values for arrays/objects
+      if(out.length===0){
+        Object.values(node).forEach(v=>walkArrays(v,depth+1));
+      }
     }
-  }
+  };
+  walkArrays(payload,0);
   return out;
 }
 
