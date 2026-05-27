@@ -148,40 +148,14 @@ table.data-table tbody tr:hover{background:var(--fm-grey-10);}
 
 <!-- TABS -->
 <nav class="flex gap-1 mb-5 flex-wrap">
-  <span class="tab active" data-tab="overview" onclick="showTab('overview')">Přehled</span>
-  <span class="tab" data-tab="calendar" onclick="showTab('calendar')">Kalendář</span>
+  <span class="tab active" data-tab="calendar" onclick="showTab('calendar')">Kalendář</span>
   <span class="tab" data-tab="seasonal" onclick="showTab('seasonal')">Sezónnost</span>
-  <span class="tab" data-tab="performance" onclick="showTab('performance')">Výkon</span>
   <span class="tab" data-tab="campaigns" onclick="showTab('campaigns')">Kampaně</span>
   <span class="tab" data-tab="settings" onclick="showTab('settings')">Nastavení</span>
 </nav>
 
-<!-- TAB: PŘEHLED -->
-<div id="tab-overview" class="tab-panel">
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5" id="overviewKpis"></div>
-  <div class="grid md:grid-cols-3 gap-4 mb-4">
-    <div class="card p-4 md:col-span-2">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold">Spend per platforma — posledních 6 měsíců</h3>
-        <span class="pill" style="background:var(--fm-grey-10);color:var(--fm-mute);" id="overviewSyncBadge">Offline</span>
-      </div>
-      <div style="height:220px;position:relative;"><canvas id="chartSpend"></canvas></div>
-    </div>
-    <div class="card p-4">
-      <h3 class="text-sm font-semibold mb-3">Aktivní kampaně</h3>
-      <div id="overviewActiveCamps" class="flex flex-col gap-2"></div>
-    </div>
-  </div>
-  <div class="card p-4">
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="text-sm font-semibold">Sezónní index — hardware CZ (přehled roku)</h3>
-    </div>
-    <div style="height:160px;position:relative;"><canvas id="chartSeasonOverview"></canvas></div>
-  </div>
-</div>
-
 <!-- TAB: KALENDÁŘ -->
-<div id="tab-calendar" class="tab-panel hidden">
+<div id="tab-calendar" class="tab-panel">
   <div class="flex items-center gap-3 mb-4 flex-wrap">
     <div class="flex items-center gap-2">
       <label class="text-sm" style="color:var(--fm-mute)">Rok</label>
@@ -233,12 +207,12 @@ table.data-table tbody tr:hover{background:var(--fm-grey-10);}
 <div id="tab-seasonal" class="tab-panel hidden">
   <div class="grid md:grid-cols-3 gap-4 mb-4">
     <div class="card p-4 md:col-span-2">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold">Sezónní index — 12 měsíců</h3>
-        <span class="text-xs" style="color:var(--fm-mute)">Baseline = 1.0 (průměrný měsíc)</span>
+      <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h3 class="text-sm font-semibold">Sezónní index &amp; reálný obrat</h3>
+        <span class="text-xs flex items-center gap-1" id="seasonalSource" style="color:var(--fm-mute)">…</span>
       </div>
-      <div style="height:220px;position:relative;"><canvas id="chartSeasonal"></canvas></div>
-      <p class="text-xs mt-3" style="color:var(--fm-mute);">Hodnoty reflektují průměrnou sezónnost hardware/e-commerce trhu v ČR. Upravte dle vlastních historických dat.</p>
+      <div style="height:300px;position:relative;"><canvas id="chartSeasonal"></canvas></div>
+      <p class="text-xs mt-3" style="color:var(--fm-mute);">Pruhy = sezónní index (baseline 1.0 = průměrný měsíc). Křivky = reálný obrat ze Shoptetu za poslední 3 roky. Index se počítá jako <strong>průměr_měsíce ÷ celoroční_průměr</strong>.</p>
     </div>
     <div class="card p-4">
       <h3 class="text-sm font-semibold mb-3">Kalkulačka budgetů</h3>
@@ -260,49 +234,6 @@ table.data-table tbody tr:hover{background:var(--fm-grey-10);}
       <h4 class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--fm-mute);">České svátky &amp; události</h4>
       <div class="flex flex-wrap gap-2 text-xs" id="czechHolidays"></div>
     </div>
-  </div>
-</div>
-
-<!-- TAB: VÝKON -->
-<div id="tab-performance" class="tab-panel hidden">
-  <div class="flex items-center gap-2 mb-4 flex-wrap">
-    <div class="flex gap-1" id="perfPlatformTabs">
-      <span class="ptab active" data-ptab="all" onclick="switchPerfTab('all')">Všechny</span>
-      <span class="ptab" data-ptab="Google Ads" onclick="switchPerfTab('Google Ads')">Google Ads</span>
-      <span class="ptab" data-ptab="Sklik" onclick="switchPerfTab('Sklik')">Sklik</span>
-      <span class="ptab" data-ptab="Meta" onclick="switchPerfTab('Meta')">Meta</span>
-    </div>
-    <div class="ml-auto flex items-center gap-2 flex-wrap">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('csvImportInput').click()">↑ Import CSV</button>
-      <input type="file" id="csvImportInput" accept=".csv" style="display:none;" onchange="handleCsvImport(event)">
-      <span class="pill" style="background:var(--fm-grey-10);color:var(--fm-mute);" id="perfDataSource">data.json</span>
-    </div>
-  </div>
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="perfKpis"></div>
-  <div class="grid md:grid-cols-2 gap-4 mb-4">
-    <div class="card p-4">
-      <h3 class="text-sm font-semibold mb-3">Spend per měsíc</h3>
-      <div style="height:200px;position:relative;"><canvas id="chartPerfSpend"></canvas></div>
-    </div>
-    <div class="card p-4">
-      <h3 class="text-sm font-semibold mb-3">CTR &amp; Konverze</h3>
-      <div style="height:200px;position:relative;"><canvas id="chartPerfConv"></canvas></div>
-    </div>
-  </div>
-  <div class="card p-4">
-    <h3 class="text-sm font-semibold mb-3">Kampaně — detailní výkon <span class="text-xs font-normal ml-2" style="color:var(--fm-mute);">Vyžaduje import denního CSV</span></h3>
-    <div style="overflow-x:auto;"><table class="data-table" id="perfCampsTable">
-      <thead><tr>
-        <th onclick="sortTable('perfCampsTable',0)">Kampaň</th>
-        <th class="r" onclick="sortTable('perfCampsTable',1)">Spend</th>
-        <th class="r" onclick="sortTable('perfCampsTable',2)">Kliky</th>
-        <th class="r" onclick="sortTable('perfCampsTable',3)">CTR</th>
-        <th class="r" onclick="sortTable('perfCampsTable',4)">CPC</th>
-        <th class="r" onclick="sortTable('perfCampsTable',5)">Konverze</th>
-        <th class="r" onclick="sortTable('perfCampsTable',6)">CPA</th>
-      </tr></thead>
-      <tbody id="perfCampsBody"><tr><td colspan="7" style="color:var(--fm-mute);padding:1.5rem;text-align:center;">Importujte CSV pro zobrazení dat kampaní</td></tr></tbody>
-    </table></div>
   </div>
 </div>
 
@@ -497,7 +428,7 @@ const DEFAULT_SEASONAL = [
   {month:12,label:'Prosinec',abbr:'Pro',index:0.75,notes:'Vánoce, minimum výstavby'},
 ];
 
-const FMP_VERSION = '3'; // bump to force-reset localStorage when data model changes
+const FMP_VERSION = '4'; // bump to force-reset localStorage when data model changes
 
 const DEFAULT_PLATFORMS = {
   'Google Ads':{monthly:11000,color:'#4285F4',lanes:[]},
@@ -555,8 +486,6 @@ let clients = [];
 let activeClientId = null;
 let state = null;
 let charts = {};
-let dailyData = []; // imported CSV rows (session only)
-let perfTab = 'all';
 let dragState = null;
 
 function makeDefaultState(name) {
@@ -569,7 +498,7 @@ function makeDefaultState(name) {
     },
     campaigns:[],
     seasonalData:JSON.parse(JSON.stringify(DEFAULT_SEASONAL)),
-    performanceData:{monthly:[],lastSync:null},
+    shoptetData:{monthlyRevenue:[],lastSync:null}, // [{year,month,revenue,orders}]
   };
 }
 
@@ -636,6 +565,22 @@ function makeHardsmileState(){
     // ── HEUREKA ───────────────────────────────────────────────────────────────
     {id:cid(),name:'Heureka — produktový listing',platform:'Heureka',lane:'',type:'performance',status:'running',startDate:'2026-01-01',endDate:'2026-12-31',budgetTotal:42000,color:'#FF6900',notes:'Celoroční produktový listing',showInCalendar:true,spend:21800,conversions:372,clicks:10400,impressions:248000},
   ];
+  // Demo Shoptet revenue data — 3 years (2023, 2024, 2025) with beauty/health-like seasonality
+  // (real data nahradí přes data.json sync ze Shoptetu)
+  const beautyPattern=[0.85,0.92,1.05,1.02,1.25,0.95,0.80,0.85,1.10,1.20,1.50,1.40]; // Jan..Dec relative weight
+  s.shoptetData={
+    monthlyRevenue:(()=>{
+      const out=[];
+      [{y:2023,base:180000},{y:2024,base:215000},{y:2025,base:248000}].forEach(({y,base})=>{
+        beautyPattern.forEach((mult,i)=>{
+          const noise=0.93+Math.random()*0.14; // ±7% randomization
+          out.push({year:y,month:i+1,revenue:Math.round(base*mult*noise),orders:Math.round(base*mult*noise/650)});
+        });
+      });
+      return out;
+    })(),
+    lastSync:'2026-01-15T08:00:00.000Z',
+  };
   return s;
 }
 
@@ -653,6 +598,9 @@ function loadStateForClient(id){try{const r=localStorage.getItem('fmp_data_'+id)
   if(!s.taxonomy)s.taxonomy={types:JSON.parse(JSON.stringify(DEFAULT_TYPES)),statuses:JSON.parse(JSON.stringify(DEFAULT_STATUSES))};
   if(!Array.isArray(s.taxonomy.types))s.taxonomy.types=JSON.parse(JSON.stringify(DEFAULT_TYPES));
   if(!Array.isArray(s.taxonomy.statuses))s.taxonomy.statuses=JSON.parse(JSON.stringify(DEFAULT_STATUSES));
+  // Ensure shoptetData exists
+  if(!s.shoptetData)s.shoptetData={monthlyRevenue:[],lastSync:null};
+  if(!Array.isArray(s.shoptetData.monthlyRevenue))s.shoptetData.monthlyRevenue=[];
   // Ensure campaigns have lane (default empty string)
   if(Array.isArray(s.campaigns))s.campaigns.forEach(c=>{if(typeof c.lane==='undefined')c.lane='';});
   return s;
@@ -693,7 +641,6 @@ function switchClient(id){
   saveActiveId();
   const loaded=loadStateForClient(id);
   state=loaded||makeDefaultState(clients.find(c=>c.id===id)?.name||'Klient');
-  dailyData=[];
   renderAll();
 }
 
@@ -713,16 +660,14 @@ function addClient(){
 }
 
 // ─── TAB SWITCHING ────────────────────────────────────────────────────────────
-let activeTab='overview';
+let activeTab='calendar';
 function showTab(id){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.add('hidden'));
   document.querySelectorAll('[data-tab]').forEach(t=>{t.classList.toggle('active',t.dataset.tab===id);});
   document.getElementById('tab-'+id).classList.remove('hidden');
   activeTab=id;
-  if(id==='overview')renderOverview();
-  else if(id==='calendar')renderCalendar();
+  if(id==='calendar')renderCalendar();
   else if(id==='seasonal')renderSeasonal();
-  else if(id==='performance')renderPerformance();
   else if(id==='campaigns')renderCampaignsTab();
   else if(id==='settings')renderSettings();
 }
@@ -749,61 +694,6 @@ function campStatusBadge(s){
 
 function getPlatformMonthlySpend(platform,period){
   return (state.performanceData.monthly||[]).filter(r=>r.platforma===platform&&r.obdobi===period).reduce((a,r)=>a+r.spend,0);
-}
-
-// ─── OVERVIEW TAB ────────────────────────────────────────────────────────────
-function renderOverview(){
-  const now=new Date();
-  const curMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const monthly=state.performanceData.monthly||[];
-  const thisMonthSpend=monthly.filter(r=>r.obdobi===curMonth).reduce((a,r)=>a+r.spend,0);
-  const activeCamps=state.campaigns.filter(c=>c.status==='running'||c.status==='deadline');
-  const totalBudget=activeCamps.reduce((a,c)=>a+(c.budgetTotal||0),0);
-
-  document.getElementById('overviewKpis').innerHTML=`
-    <div class="kpi-tile"><div class="kpi-label">Spend tento měsíc</div><div class="kpi-val num">${fmtKc(thisMonthSpend)}</div><div class="kpi-sub">${curMonth.replace('-','/')}</div></div>
-    <div class="kpi-tile"><div class="kpi-label">Aktivní kampaně</div><div class="kpi-val">${activeCamps.length}</div><div class="kpi-sub">běží právě teď</div></div>
-    <div class="kpi-tile"><div class="kpi-label">Budget aktivních</div><div class="kpi-val num">${fmtKc(totalBudget)}</div><div class="kpi-sub">celkový budget</div></div>
-    <div class="kpi-tile" style="border-color:var(--fm-red);background:var(--fm-red-bg);">
-      <div class="kpi-label" style="color:var(--fm-red);">Kampaně v plánu</div>
-      <div class="kpi-val kpi-accent">${state.campaigns.filter(c=>c.status==='planned').length}</div>
-      <div class="kpi-sub">připravených</div>
-    </div>`;
-
-  document.getElementById('overviewSyncBadge').innerHTML=state.performanceData.lastSync?
-    `<span style="width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;"></span>Sync ${new Date(state.performanceData.lastSync).toLocaleDateString('cs-CZ')}`:'Offline — žádná data';
-
-  // Active campaigns list
-  const acEl=document.getElementById('overviewActiveCamps');
-  if(activeCamps.length===0){acEl.innerHTML='<p class="text-sm" style="color:var(--fm-mute);">Žádné aktivní kampaně</p>';}
-  else{acEl.innerHTML=activeCamps.slice(0,6).map(c=>`
-    <div class="flex items-center gap-2 cursor-pointer hover:opacity-75" onclick="openCampaignModal('${c.id}')">
-      <span style="width:10px;height:10px;border-radius:2px;background:${c.color||STATUS_COLORS[c.status]||platColor(c.platform)};flex-shrink:0;"></span>
-      <span class="text-sm font-medium truncate flex-1">${esc(c.name)}</span>
-      <span class="text-xs" style="color:var(--fm-mute);">${c.platform}</span>
-    </div>`).join('');}
-
-  // Spend chart — last 6 months
-  const months6=[];const now2=new Date();
-  for(let i=5;i>=0;i--){const d=new Date(now2.getFullYear(),now2.getMonth()-i,1);months6.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
-  const platforms=Object.keys(state.platformBudgets).filter(p=>state.config.activePlatforms?.includes(p));
-  const datasets=platforms.map(p=>({
-    label:p,
-    data:months6.map(m=>getPlatformMonthlySpend(p,m)),
-    backgroundColor:platColor(p),borderColor:platColor(p),borderWidth:0,borderRadius:3,
-  }));
-  if(charts.spend)charts.spend.destroy();
-  const ctx=document.getElementById('chartSpend').getContext('2d');
-  charts.spend=new Chart(ctx,{type:'bar',data:{labels:months6.map(m=>{const[y,mo]=m.split('-');return['','Led','Úno','Bře','Dub','Kvě','Čer','Čec','Srp','Zář','Říj','Lis','Pro'][parseInt(mo)];}),datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>v.toLocaleString('cs-CZ')}}}}});
-
-  // Season overview chart
-  const sd=state.seasonalData;
-  if(charts.seasonOverview)charts.seasonOverview.destroy();
-  const ctx2=document.getElementById('chartSeasonOverview').getContext('2d');
-  charts.seasonOverview=new Chart(ctx2,{type:'bar',data:{
-    labels:sd.map(s=>s.abbr),
-    datasets:[{label:'Sezónní index',data:sd.map(s=>s.index),backgroundColor:sd.map(s=>s.index>=1.3?'rgba(220,38,38,.7)':s.index>=1.0?'rgba(234,179,8,.7)':'rgba(156,163,175,.7)'),borderRadius:3}]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{min:0,max:2,grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>v.toFixed(1)}}}}});
 }
 
 // ─── CALENDAR TAB — ISO week grid ─────────────────────────────────────────────
@@ -1108,23 +998,115 @@ function showTooltip(e,cell){
 function hideTooltip(){document.getElementById('tlTooltip').style.display='none';}
 
 // ─── SEASONAL TAB ────────────────────────────────────────────────────────────
+
+// Auto-compute seasonal indexes from Shoptet monthlyRevenue data.
+// Returns {indexes: number[12], years: number[], yearRevenue: {[year]: number[12]}, source: 'auto'|'manual'}
+function computeSeasonalFromData(){
+  const data=(state.shoptetData&&state.shoptetData.monthlyRevenue)||[];
+  if(data.length<12)return null; // need at least one full year
+  // Group by year
+  const byYear={};
+  data.forEach(r=>{
+    if(!byYear[r.year])byYear[r.year]=Array(12).fill(0);
+    byYear[r.year][r.month-1]=r.revenue||0;
+  });
+  // Keep only complete years (at least 10 of 12 months > 0 to allow some gaps)
+  const completeYears=Object.keys(byYear).map(Number).sort()
+    .filter(y=>byYear[y].filter(v=>v>0).length>=10);
+  if(completeYears.length===0)return null;
+  const recent=completeYears.slice(-3); // last 3 years
+  // Compute index per month: avg(revenue_M across recent years) / overall_monthly_avg
+  const monthSums=Array(12).fill(0);
+  const monthCounts=Array(12).fill(0);
+  recent.forEach(y=>{
+    byYear[y].forEach((v,i)=>{
+      if(v>0){monthSums[i]+=v;monthCounts[i]++;}
+    });
+  });
+  const monthAvg=monthSums.map((s,i)=>monthCounts[i]>0?s/monthCounts[i]:0);
+  const overallAvg=monthAvg.reduce((a,b)=>a+b,0)/12;
+  const indexes=overallAvg>0?monthAvg.map(v=>+(v/overallAvg).toFixed(3)):Array(12).fill(1);
+  const yearRevenue={};
+  recent.forEach(y=>{yearRevenue[y]=byYear[y];});
+  return {indexes, years:recent, yearRevenue, source:'auto'};
+}
+
 function renderSeasonal(){
+  const auto=computeSeasonalFromData();
   const sd=state.seasonalData;
+  // Use auto indexes if available, else manual
+  const displayIdx=auto?auto.indexes:sd.map(s=>s.index);
+  const sourceBadge=document.getElementById('seasonalSource');
+  if(sourceBadge){
+    if(auto){
+      sourceBadge.innerHTML=`<span style="width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;"></span>Autovýpočet z ${auto.years.length} let Shoptet dat (${auto.years.join(', ')})`;
+      sourceBadge.style.color='var(--fm-grey-90)';
+    }else{
+      sourceBadge.innerHTML=`<span style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>Manuálně nastaveno (chybí Shoptet data — minimálně 1 plný rok)`;
+      sourceBadge.style.color='var(--fm-mute)';
+    }
+  }
+
   if(charts.seasonal)charts.seasonal.destroy();
   const ctx=document.getElementById('chartSeasonal').getContext('2d');
-  charts.seasonal=new Chart(ctx,{type:'bar',data:{
-    labels:sd.map(s=>s.label),
-    datasets:[{
-      label:'Sezónní index',
-      data:sd.map(s=>s.index),
-      backgroundColor:sd.map(s=>s.index>=1.3?'rgba(220,38,38,.75)':s.index>=1.0?'rgba(234,179,8,.75)':'rgba(156,163,175,.75)'),
-      borderRadius:4,
-    }]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},annotation:{annotations:{line1:{type:'line',yMin:1,yMax:1,borderColor:'rgba(0,0,0,.3)',borderDash:[4,3]}}}},scales:{x:{grid:{display:false}},y:{min:0,max:2,grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>v.toFixed(1)}}}}});
+  const labels=['Led','Úno','Bře','Dub','Kvě','Čer','Čec','Srp','Zář','Říj','Lis','Pro'];
 
-  // Editor
+  // Datasets: bar (index) + line per year revenue (on secondary y-axis)
+  const datasets=[{
+    label:'Sezónní index',
+    type:'bar',
+    data:displayIdx,
+    backgroundColor:displayIdx.map(v=>v>=1.3?'rgba(220,38,38,.7)':v>=1.0?'rgba(234,179,8,.7)':'rgba(156,163,175,.5)'),
+    borderRadius:4,
+    yAxisID:'yIdx',
+    order:3,
+  }];
+  if(auto){
+    const yearColors=['#1877F2','#22c55e','#DC2626']; // blue / green / red for up to 3 years
+    auto.years.forEach((y,i)=>{
+      datasets.push({
+        label:`Obrat ${y} (Shoptet)`,
+        type:'line',
+        data:auto.yearRevenue[y],
+        borderColor:yearColors[i%yearColors.length],
+        backgroundColor:yearColors[i%yearColors.length]+'22',
+        borderWidth:2,
+        tension:.35,
+        pointRadius:3,
+        pointBackgroundColor:yearColors[i%yearColors.length],
+        fill:false,
+        yAxisID:'yRev',
+        order:i+1,
+      });
+    });
+  }
+
+  charts.seasonal=new Chart(ctx,{
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:(c)=>{
+          if(c.dataset.yAxisID==='yIdx')return `Index: ${c.parsed.y.toFixed(2)}`;
+          return `${c.dataset.label}: ${Math.round(c.parsed.y).toLocaleString('cs-CZ')} Kč`;
+        }}}
+      },
+      scales:{
+        x:{grid:{display:false}},
+        yIdx:{position:'left',min:0,max:2,grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>v.toFixed(1)},title:{display:true,text:'Sezónní index',font:{size:10},color:'#7A7A7A'}},
+        yRev:{position:'right',grid:{display:false},ticks:{callback:v=>Math.round(v/1000)+'k'},title:{display:true,text:'Obrat (Kč)',font:{size:10},color:'#7A7A7A'},display:!!auto}
+      }
+    }
+  });
+
+  // Editor — if auto, sync state.seasonalData first so kalkulačka uses fresh values
+  if(auto){
+    auto.indexes.forEach((v,i)=>{state.seasonalData[i].index=+v.toFixed(3);});
+  }
   const ed=document.getElementById('seasonalEditor');
-  ed.innerHTML=sd.map((s,i)=>`
+  ed.innerHTML=state.seasonalData.map((s,i)=>`
     <div class="card p-3">
       <div class="flex items-center justify-between mb-1">
         <span class="text-sm font-semibold">${s.label}</span>
@@ -1132,7 +1114,7 @@ function renderSeasonal(){
       </div>
       <div class="flex items-center gap-2">
         <input type="number" class="season-input" value="${s.index}" min="0" max="3" step="0.05"
-          onchange="updateSeasonalIndex(${i},this.value)" style="width:70px;">
+          onchange="updateSeasonalIndex(${i},this.value)" style="width:70px;" ${auto?'title="Auto-vypočítáno ze Shoptet dat — změnou přepneš na manuál"':''}>
         <div class="flex-1" style="height:6px;border-radius:3px;background:linear-gradient(90deg,${s.index>=1.3?'rgba(220,38,38,.7)':s.index>=1.0?'rgba(234,179,8,.7)':'rgba(156,163,175,.5)'},transparent);"></div>
       </div>
       <div class="text-xs mt-1" style="color:var(--fm-mute);">${s.notes||''}</div>
@@ -1148,7 +1130,7 @@ function updateSeasonalIndex(i,val){
   renderSeasonal();
 }
 function resetSeasonalData(){
-  if(!confirm('Obnovit výchozí sezónní indexy?'))return;
+  if(!confirm('Obnovit výchozí sezónní indexy (přepíše manuální úpravy)?'))return;
   state.seasonalData=JSON.parse(JSON.stringify(DEFAULT_SEASONAL));
   saveState();
   renderSeasonal();
@@ -1173,122 +1155,6 @@ function renderBudgetCalc(){
 function renderHolidays(){
   const el=document.getElementById('czechHolidays');
   el.innerHTML=CZECH_HOLIDAYS.map(h=>`<span class="chip">${h.date.slice(0,2)}.${h.date.slice(3,5)}. ${h.name}</span>`).join('');
-}
-
-// ─── PERFORMANCE TAB ─────────────────────────────────────────────────────────
-function switchPerfTab(p){
-  perfTab=p;
-  document.querySelectorAll('.ptab').forEach(t=>t.classList.toggle('active',t.dataset.ptab===p));
-  renderPerformance();
-}
-
-function renderPerformance(){
-  const monthly=state.performanceData.monthly||[];
-  const platforms=perfTab==='all'?Object.keys(state.platformBudgets):[perfTab];
-
-  // KPIs from monthly data
-  const totSpend=monthly.filter(r=>platforms.includes(r.platforma)).reduce((a,r)=>a+r.spend,0);
-  const totConv=dailyData.filter(r=>platforms.some(p=>sourceToPlat(r.source)===p)).reduce((a,r)=>a+(r.conversions||0),0);
-  const totClicks=dailyData.filter(r=>platforms.some(p=>sourceToPlat(r.source)===p)).reduce((a,r)=>a+(r.clicks||0),0);
-  const totImpr=dailyData.filter(r=>platforms.some(p=>sourceToPlat(r.source)===p)).reduce((a,r)=>a+(r.impressions||0),0);
-  const ctr=totImpr>0?(totClicks/totImpr*100):0;
-  const cpc=totClicks>0?(totSpend/totClicks):0;
-  const cpa=totConv>0?(totSpend/totConv):0;
-
-  document.getElementById('perfKpis').innerHTML=`
-    <div class="kpi-tile"><div class="kpi-label">Spend celkem</div><div class="kpi-val num">${fmtKc(totSpend)}</div><div class="kpi-sub">z data.json</div></div>
-    <div class="kpi-tile"><div class="kpi-label">Kliky</div><div class="kpi-val num">${fmtNum(totClicks)}</div><div class="kpi-sub">${ctr>0?'CTR '+fmtPct(ctr):'Importujte CSV'}</div></div>
-    <div class="kpi-tile"><div class="kpi-label">Konverze</div><div class="kpi-val num">${fmtNum(totConv)}</div><div class="kpi-sub">${cpa>0?'CPA '+fmtKc(cpa):'Importujte CSV'}</div></div>
-    <div class="kpi-tile" style="border-color:var(--fm-red);background:var(--fm-red-bg);"><div class="kpi-label" style="color:var(--fm-red);">CPC</div><div class="kpi-val num kpi-accent">${cpc>0?fmtKc(cpc):'—'}</div><div class="kpi-sub">průměrná cena kliku</div></div>`;
-
-  // Spend chart by month
-  const allMonths=[...new Set(monthly.map(r=>r.obdobi))].sort();
-  const last6=allMonths.slice(-6);
-  const spendDs=platforms.map(p=>({
-    label:p,
-    data:last6.map(m=>monthly.filter(r=>r.platforma===p&&r.obdobi===m).reduce((a,r)=>a+r.spend,0)),
-    backgroundColor:platColor(p),borderRadius:2,
-  }));
-  if(charts.perfSpend)charts.perfSpend.destroy();
-  const ctx1=document.getElementById('chartPerfSpend').getContext('2d');
-  charts.perfSpend=new Chart(ctx1,{type:'bar',data:{labels:last6.map(m=>{const[y,mo]=m.split('-');return['','Led','Úno','Bře','Dub','Kvě','Čer','Čec','Srp','Zář','Říj','Lis','Pro'][parseInt(mo)];}),datasets:spendDs},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()}}}}});
-
-  // Conversions chart
-  let convData=[];
-  if(dailyData.length>0){
-    const byMonth={};
-    dailyData.forEach(r=>{
-      const m=r.date.slice(0,7);if(!byMonth[m])byMonth[m]={conv:0,clicks:0};
-      byMonth[m].conv+=(r.conversions||0);byMonth[m].clicks+=(r.clicks||0);
-    });
-    const months=Object.keys(byMonth).sort().slice(-6);
-    convData=months.map(m=>({m,conv:byMonth[m].conv,ctr:byMonth[m].clicks>0?byMonth[m].conv/byMonth[m].clicks*100:0}));
-  }
-  if(charts.perfConv)charts.perfConv.destroy();
-  const ctx2=document.getElementById('chartPerfConv').getContext('2d');
-  if(convData.length>0){
-    charts.perfConv=new Chart(ctx2,{type:'bar',data:{labels:convData.map(d=>d.m.slice(5)),datasets:[{label:'Konverze',data:convData.map(d=>d.conv),backgroundColor:'rgba(220,38,38,.7)',borderRadius:3,yAxisID:'y'},{label:'CTR %',data:convData.map(d=>d.ctr),type:'line',borderColor:'#4285F4',backgroundColor:'rgba(66,133,244,.1)',fill:true,tension:.3,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,.05)'}},y1:{position:'right',grid:{display:false},ticks:{callback:v=>v.toFixed(1)+'%'}}}}});
-  } else {
-    charts.perfConv=new Chart(ctx2,{type:'bar',data:{labels:[],datasets:[]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{},y:{}}}});
-    ctx2.canvas.parentNode.querySelector('h3')?.after(Object.assign(document.createElement('p'),{textContent:'Importujte CSV pro zobrazení',style:'color:var(--fm-mute);font-size:.8rem;'}));
-  }
-
-  // Campaign table from daily data
-  if(dailyData.length>0){
-    const byCamp={};
-    dailyData.forEach(r=>{
-      const k=r.campaign_name||'(neznámá)';
-      if(!byCamp[k])byCamp[k]={name:k,spend:0,clicks:0,impressions:0,conversions:0,value:0};
-      byCamp[k].spend+=(r.cost||0);byCamp[k].clicks+=(r.clicks||0);
-      byCamp[k].impressions+=(r.impressions||0);byCamp[k].conversions+=(r.conversions||0);
-      byCamp[k].value+=(r.conversions_value||0);
-    });
-    const rows=Object.values(byCamp).sort((a,b)=>b.spend-a.spend);
-    document.getElementById('perfCampsBody').innerHTML=rows.map(r=>{
-      const ctr=r.impressions>0?(r.clicks/r.impressions*100).toFixed(2)+'%':'—';
-      const cpc=r.clicks>0?fmtKc(r.spend/r.clicks):'—';
-      const cpa=r.conversions>0?fmtKc(r.spend/r.conversions):'—';
-      return `<tr><td>${esc(r.name)}</td><td class="r mono">${fmtKc(r.spend)}</td><td class="r">${fmtNum(r.clicks)}</td><td class="r">${ctr}</td><td class="r">${cpc}</td><td class="r">${fmtNum(r.conversions)}</td><td class="r">${cpa}</td></tr>`;
-    }).join('');
-  }
-
-  document.getElementById('perfDataSource').textContent=dailyData.length>0?`CSV — ${dailyData.length} řádků`:'data.json';
-}
-
-function sourceToPlat(source){
-  const m={'google':'Google Ads','seznam':'Sklik','facebook':'Meta','heureka.cz':'Heureka'};
-  return m[source]||source;
-}
-
-// ─── CSV IMPORT ───────────────────────────────────────────────────────────────
-function handleCsvImport(event){
-  const file=event.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const lines=e.target.result.split('\n').filter(l=>l.trim());
-    if(lines.length<2){alert('CSV je prázdné nebo neplatné.');return;}
-    const headers=lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/"/g,''));
-    const idx={};
-    ['web','date','source','medium','cost','clicks','impressions','campaign_name','campaign_id','conversions','conversions_value'].forEach(k=>{idx[k]=headers.indexOf(k);});
-    dailyData=[];
-    for(let i=1;i<lines.length;i++){
-      const cols=lines[i].split(',').map(c=>c.trim().replace(/"/g,''));
-      if(cols.length<3)continue;
-      const row={};
-      Object.keys(idx).forEach(k=>{if(idx[k]>=0)row[k]=cols[idx[k]];});
-      row.cost=parseFloat(row.cost)||0;
-      row.clicks=parseInt(row.clicks)||0;
-      row.impressions=parseInt(row.impressions)||0;
-      row.conversions=parseFloat(row.conversions)||0;
-      row.conversions_value=parseFloat(row.conversions_value)||0;
-      if(row.medium&&row.medium!=='cpc'&&row.medium!=='referral'){}
-      if(row.date&&row.cost>=0)dailyData.push(row);
-    }
-    event.target.value='';
-    renderPerformance();
-    alert(`Importováno ${dailyData.length} řádků z CSV.`);
-  };
-  reader.readAsText(file,'UTF-8');
 }
 
 // ─── CAMPAIGNS TAB ────────────────────────────────────────────────────────────
@@ -1493,7 +1359,7 @@ function importClientData(event){
 
 function clearClientData(){
   state=makeDefaultState(state.config?.klient||'Klient');
-  saveState();dailyData=[];renderAll();
+  saveState();renderAll();
 }
 
 // ─── CAMPAIGN MODAL ───────────────────────────────────────────────────────────
@@ -1595,7 +1461,7 @@ function saveCampaign(){
   closeCampaignModal();
   if(activeTab==='calendar')renderCalendar();
   else if(activeTab==='campaigns')renderCampaignsTab();
-  else if(activeTab==='overview')renderOverview();
+  else if(activeTab==='seasonal')renderSeasonal();
 }
 
 function deleteCampaign(){
@@ -1605,20 +1471,29 @@ function deleteCampaign(){
   saveState();closeCampaignModal();
   if(activeTab==='calendar')renderCalendar();
   else if(activeTab==='campaigns')renderCampaignsTab();
-  else renderOverview();
 }
 
 // ─── DATA LOADING ─────────────────────────────────────────────────────────────
+// Expected data.json shape:
+// {
+//   "shoptet": {
+//     "monthlyRevenue": [{"year":2023,"month":1,"revenue":180000,"orders":280}, ...]
+//   },
+//   "lastSync": "2026-01-15T08:00:00Z"
+// }
 async function loadDataJson(){
-  const url=state.config.dataJsonUrl||'./data.json';
+  const url=state.config.dataJsonUrl;
+  if(!url)return; // no URL configured → use seeded demo data
   try{
-    const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);
+    const r=await fetch(url,{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
-    state.performanceData.monthly=d.spends||[];
-    state.performanceData.lastSync=d.lastSync||new Date().toISOString();
+    if(d.shoptet&&Array.isArray(d.shoptet.monthlyRevenue)){
+      state.shoptetData.monthlyRevenue=d.shoptet.monthlyRevenue;
+    }
+    state.shoptetData.lastSync=d.lastSync||new Date().toISOString();
     saveState();
-    if(activeTab==='performance')renderPerformance();
-    else if(activeTab==='overview')renderOverview();
+    if(activeTab==='seasonal')renderSeasonal();
   }catch(e){console.warn('data.json load failed:',e);}
 }
 
@@ -1646,10 +1521,8 @@ function sortTable(tableId,colIdx){
 // ─── RENDER ALL ───────────────────────────────────────────────────────────────
 function renderAll(){
   renderClientSelector();
-  if(activeTab==='overview')renderOverview();
-  else if(activeTab==='calendar')renderCalendar();
+  if(activeTab==='calendar')renderCalendar();
   else if(activeTab==='seasonal')renderSeasonal();
-  else if(activeTab==='performance')renderPerformance();
   else if(activeTab==='campaigns')renderCampaignsTab();
   else if(activeTab==='settings')renderSettings();
 }
@@ -1660,7 +1533,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   refreshTaxonomyCache();
   renderClientSelector();
   loadDataJson().catch(()=>{});
-  renderOverview();
+  renderCalendar();
   // Close modals on overlay click
   document.querySelectorAll('.modal-overlay').forEach(m=>{
     m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
