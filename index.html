@@ -490,7 +490,14 @@ let dragState = null;
 
 function makeDefaultState(name) {
   return {
-    config:{klient:name,manazer:'',manazerEmail:'',dataJsonUrl:'',activePlatforms:Object.keys(DEFAULT_PLATFORMS)},
+    config:{
+      klient:name,manazer:'',manazerEmail:'',dataJsonUrl:'',
+      activePlatforms:Object.keys(DEFAULT_PLATFORMS),
+      // B2metrics integration (per-client)
+      b2mUrl:'',           // e.g. https://app.b2metrics.com/api/v1/webs/year?webID=195
+      b2mToken:'',         // Bearer / API token (will be sent as Authorization: Bearer <token>)
+      b2mAuthScheme:'Bearer', // 'Bearer' | 'Token' | 'ApiKey' | 'Raw' (Raw = use exact value as Authorization header)
+    },
     platformBudgets:JSON.parse(JSON.stringify(DEFAULT_PLATFORMS)),
     taxonomy:{
       types:JSON.parse(JSON.stringify(DEFAULT_TYPES)),
@@ -1195,12 +1202,27 @@ function renderCampaignsTab(){
 // ─── SETTINGS TAB ────────────────────────────────────────────────────────────
 function renderSettings(){
   const cfg=state.config;
+  const lastSync=state.shoptetData&&state.shoptetData.lastSync?
+    `<span class="text-xs" style="color:var(--fm-mute);margin-left:.5rem;">Poslední sync: ${new Date(state.shoptetData.lastSync).toLocaleString('cs-CZ')}</span>`:'';
   document.getElementById('clientConfigForm').innerHTML=`
     <div class="form-group"><label class="fl">Název klienta</label><input type="text" value="${esc(cfg.klient||'')}" onchange="updateConfig('klient',this.value)"></div>
     <div class="form-group"><label class="fl">Account manager</label><input type="text" value="${esc(cfg.manazer||'')}" onchange="updateConfig('manazer',this.value)"></div>
     <div class="form-group"><label class="fl">Email manažera</label><input type="email" value="${esc(cfg.manazerEmail||'')}" onchange="updateConfig('manazerEmail',this.value)"></div>
-    <div class="form-group"><label class="fl">URL data.json (synchronizace)</label><input type="url" value="${esc(cfg.dataJsonUrl||'')}" placeholder="https://..." onchange="updateConfig('dataJsonUrl',this.value)"></div>
-    <button class="btn btn-ghost btn-sm" onclick="loadDataJson()">↻ Načíst data nyní</button>`;
+    <hr style="border-color:var(--fm-line);margin:.6rem 0;">
+    <h4 class="text-xs font-semibold uppercase tracking-wider" style="color:var(--fm-grey-90);">Shoptet / B2metrics napojení</h4>
+    <div class="form-group"><label class="fl">B2metrics API URL</label><input type="url" value="${esc(cfg.b2mUrl||'')}" placeholder="https://app.b2metrics.com/api/v1/webs/year?webID=195" onchange="updateConfig('b2mUrl',this.value)"></div>
+    <div class="form-group"><label class="fl">API Token</label><input type="password" value="${esc(cfg.b2mToken||'')}" placeholder="••••••" onchange="updateConfig('b2mToken',this.value)"></div>
+    <div class="form-group"><label class="fl">Auth Scheme</label><select onchange="updateConfig('b2mAuthScheme',this.value)">
+      ${['Bearer','Token','ApiKey','Raw'].map(s=>`<option value="${s}"${s===(cfg.b2mAuthScheme||'Bearer')?' selected':''}>${s}${s==='Raw'?' (pošle token jako celý Authorization header)':''}</option>`).join('')}
+    </select></div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <button class="btn btn-ghost btn-sm" id="b2mLoadBtn" onclick="loadB2metricsAndRefresh()">↻ Načíst data z B2metrics</button>
+      <span class="text-xs" id="b2mStatus" style="color:var(--fm-mute);"></span>
+    </div>
+    ${lastSync?`<div class="text-xs" style="color:var(--fm-mute);">${lastSync}</div>`:''}
+    <hr style="border-color:var(--fm-line);margin:.6rem 0;">
+    <div class="form-group"><label class="fl">Alternativně: URL static data.json</label><input type="url" value="${esc(cfg.dataJsonUrl||'')}" placeholder="https://..." onchange="updateConfig('dataJsonUrl',this.value)"></div>
+    <button class="btn btn-ghost btn-sm" onclick="loadDataJson()">↻ Načíst data.json</button>`;
 
   renderPlatformConfig();
   renderTypesEditor();
@@ -1474,7 +1496,7 @@ function deleteCampaign(){
 }
 
 // ─── DATA LOADING ─────────────────────────────────────────────────────────────
-// Expected data.json shape:
+// Static data.json shape (alternative path):
 // {
 //   "shoptet": {
 //     "monthlyRevenue": [{"year":2023,"month":1,"revenue":180000,"orders":280}, ...]
@@ -1483,7 +1505,7 @@ function deleteCampaign(){
 // }
 async function loadDataJson(){
   const url=state.config.dataJsonUrl;
-  if(!url)return; // no URL configured → use seeded demo data
+  if(!url)return;
   try{
     const r=await fetch(url,{cache:'no-store'});
     if(!r.ok)throw new Error('HTTP '+r.status);
@@ -1495,6 +1517,93 @@ async function loadDataJson(){
     saveState();
     if(activeTab==='seasonal')renderSeasonal();
   }catch(e){console.warn('data.json load failed:',e);}
+}
+
+// Normalize various B2metrics response shapes into [{year,month,revenue,orders}]
+// Known shapes (we'll detect at runtime):
+//   1) {months:[{date:"2024-01",revenue:..,orders:..}, ...]}
+//   2) {data:[{year:2024,month:1,revenue:..,orders:..}, ...]}
+//   3) {years:{"2024":[{month:1,revenue:..}, ...]}}
+//   4) plain array of {year,month,revenue} or {date,revenue}
+function normalizeB2mResponse(payload){
+  const out=[];
+  const tryPush=(row)=>{
+    let year,month;
+    if(row.year&&row.month){year=+row.year;month=+row.month;}
+    else if(row.date){const m=String(row.date).match(/^(\d{4})-(\d{1,2})/);if(m){year=+m[1];month=+m[2];}}
+    else if(row.period){const m=String(row.period).match(/^(\d{4})-(\d{1,2})/);if(m){year=+m[1];month=+m[2];}}
+    else return;
+    const revenue=+(row.revenue??row.turnover??row.obrat??row.amount??row.total??0);
+    const orders=+(row.orders??row.order_count??row.objednavky??row.count??0);
+    if(year>0&&month>=1&&month<=12&&revenue>0){
+      out.push({year,month,revenue:Math.round(revenue),orders:Math.round(orders)});
+    }
+  };
+  if(Array.isArray(payload)){payload.forEach(tryPush);}
+  else if(payload&&typeof payload==='object'){
+    if(Array.isArray(payload.months))payload.months.forEach(tryPush);
+    else if(Array.isArray(payload.data))payload.data.forEach(tryPush);
+    else if(Array.isArray(payload.result))payload.result.forEach(tryPush);
+    else if(payload.years&&typeof payload.years==='object'){
+      Object.entries(payload.years).forEach(([y,rows])=>{
+        if(Array.isArray(rows))rows.forEach(r=>tryPush({year:y,...r}));
+      });
+    } else {
+      // last resort: walk all values searching for arrays of objects with month+revenue-like field
+      Object.values(payload).forEach(v=>{
+        if(Array.isArray(v))v.forEach(tryPush);
+      });
+    }
+  }
+  return out;
+}
+
+async function loadB2metrics(){
+  const cfg=state.config;
+  if(!cfg.b2mUrl){return {ok:false,reason:'Není zadána URL B2metrics'};}
+  if(!cfg.b2mToken){return {ok:false,reason:'Není zadán API token'};}
+  const headers={'Accept':'application/json'};
+  const scheme=cfg.b2mAuthScheme||'Bearer';
+  if(scheme==='Raw')headers['Authorization']=cfg.b2mToken;
+  else headers['Authorization']=`${scheme} ${cfg.b2mToken}`;
+  try{
+    const r=await fetch(cfg.b2mUrl,{headers,cache:'no-store'});
+    if(!r.ok){
+      const body=await r.text().catch(()=>'');
+      return {ok:false,reason:`HTTP ${r.status} — ${body.slice(0,160)}`};
+    }
+    const d=await r.json();
+    const normalized=normalizeB2mResponse(d);
+    if(normalized.length===0){
+      return {ok:false,reason:'Odpověď neobsahuje rozpoznatelná měsíční data',raw:d};
+    }
+    state.shoptetData.monthlyRevenue=normalized;
+    state.shoptetData.lastSync=new Date().toISOString();
+    saveState();
+    return {ok:true,rows:normalized.length,years:[...new Set(normalized.map(r=>r.year))].sort()};
+  }catch(e){
+    return {ok:false,reason:`Síťová chyba: ${e.message} (často CORS — pokud server B2metrics nepovolí CORS pro tvůj origin, musí to běžet přes proxy)`};
+  }
+}
+
+async function loadB2metricsAndRefresh(){
+  const btn=document.getElementById('b2mLoadBtn');
+  const msg=document.getElementById('b2mStatus');
+  if(btn){btn.disabled=true;btn.textContent='Načítám…';}
+  if(msg){msg.textContent='';msg.style.color='var(--fm-mute)';}
+  const res=await loadB2metrics();
+  if(btn){btn.disabled=false;btn.textContent='↻ Načíst data z B2metrics';}
+  if(msg){
+    if(res.ok){
+      msg.style.color='#16a34a';
+      msg.textContent=`✓ Načteno ${res.rows} řádků (${res.years.join(', ')})`;
+    }else{
+      msg.style.color='var(--fm-red)';
+      msg.textContent='✗ '+res.reason;
+    }
+  }
+  if(activeTab==='seasonal')renderSeasonal();
+  if(activeTab==='settings')renderSettings();
 }
 
 // ─── TABLE SORT ──────────────────────────────────────────────────────────────
@@ -1533,6 +1642,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   refreshTaxonomyCache();
   renderClientSelector();
   loadDataJson().catch(()=>{});
+  if(state.config.b2mUrl&&state.config.b2mToken){loadB2metrics().then(res=>{if(res.ok&&activeTab==='seasonal')renderSeasonal();}).catch(()=>{});}
   renderCalendar();
   // Close modals on overlay click
   document.querySelectorAll('.modal-overlay').forEach(m=>{
