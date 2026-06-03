@@ -2,3 +2,7 @@
 *.log
 .DS_Store
 Thumbs.db
+
+# Internal docs — kept on Drive folder, not committed to public repo
+DEVELOPER_GUIDE.md
+PROJECT_HANDOFF.md
